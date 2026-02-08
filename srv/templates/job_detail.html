@@ -1,0 +1,86 @@
+{{define "content"}}
+<div class="section-header">
+    <h1>{{.Job.Name}}</h1>
+    <div>
+        {{if eq .Job.Status "running"}}
+        <button class="btn btn-danger" onclick="stopJob({{.Job.ID}})">⏹ Stop</button>
+        {{else}}
+        <button class="btn btn-success" onclick="runJob({{.Job.ID}})">▶ Run Now</button>
+        {{end}}
+        <a href="/jobs/{{.Job.ID}}/edit" class="btn btn-warning">✎ Edit</a>
+        <button class="btn btn-danger" onclick="deleteJob({{.Job.ID}})">⌦ Delete</button>
+    </div>
+</div>
+
+<div class="card">
+    <h3>Job Details</h3>
+    <dl class="details-list">
+        <dt>Prompt</dt>
+        <dd>{{.Job.Prompt}}</dd>
+        
+        {{if .Job.Keywords}}
+        <dt>Keywords</dt>
+        <dd>{{.Job.Keywords}}</dd>
+        {{end}}
+        
+        {{if .Job.Sources}}
+        <dt>Sources</dt>
+        <dd>{{.Job.Sources}}</dd>
+        {{end}}
+        
+        {{if .Job.Region}}
+        <dt>Region</dt>
+        <dd>{{.Job.Region}}</dd>
+        {{end}}
+        
+        <dt>Frequency</dt>
+        <dd>{{if eq .Job.IsOneTime 1}}One-time{{else}}{{.Job.Frequency}}{{end}}</dd>
+        
+        <dt>Status</dt>
+        <dd><span class="status status-{{.Job.Status}}">{{.Job.Status}}</span></dd>
+        
+        <dt>Active</dt>
+        <dd>{{if eq .Job.IsActive 1}}Yes{{else}}No{{end}}</dd>
+        
+        {{if .Job.LastRunAt}}
+        <dt>Last Run</dt>
+        <dd>{{.Job.LastRunAt.Format "Jan 02, 2006 15:04:05"}}</dd>
+        {{end}}
+        
+        {{if .Job.NextRunAt}}
+        <dt>Next Run</dt>
+        <dd>{{.Job.NextRunAt.Format "Jan 02, 2006 15:04:05"}}</dd>
+        {{end}}
+    </dl>
+</div>
+
+<div class="section">
+    <h2>Retrieved Articles ({{.TotalCount}})</h2>
+    {{if .Articles}}
+    <div class="articles-list">
+        {{range .Articles}}
+        <div class="article-card">
+            <h4><a href="/articles/{{.ID}}">{{.Title}}</a></h4>
+            {{if .Url}}<p class="article-url"><a href="{{.Url}}" target="_blank">{{.Url}}</a></p>{{end}}
+            <p class="article-summary">{{.Summary}}</p>
+            <p class="article-date">{{.RetrievedAt.Format "Jan 02, 2006 15:04"}}</p>
+        </div>
+        {{end}}
+    </div>
+    
+    {{if gt .TotalCount 50}}
+    <div class="pagination">
+        {{if gt .Page 1}}
+        <a href="/jobs/{{.Job.ID}}?page={{subtract .Page 1}}" class="btn">← Previous</a>
+        {{end}}
+        <span>Page {{.Page}}</span>
+        {{if lt (multiply .Page 50) .TotalCount}}
+        <a href="/jobs/{{.Job.ID}}?page={{add .Page 1}}" class="btn">Next →</a>
+        {{end}}
+    </div>
+    {{end}}
+    {{else}}
+    <p class="empty-state">No articles retrieved yet. Click "Run Now" to fetch articles.</p>
+    {{end}}
+</div>
+{{end}}

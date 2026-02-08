@@ -1,0 +1,12 @@
+[Unit]
+Description=Cleanup old news-app conversations
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/home/exedev/news-app/cleanup-conversations.sh
+User=exedev
+WorkingDirectory=/home/exedev/news-app
+
+[Install]
+WantedBy=multi-user.target

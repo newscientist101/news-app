@@ -1,0 +1,33 @@
+{{define "layout"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News Agent</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">News Agent</div>
+        <div class="nav-links">
+            <a href="/">Dashboard</a>
+            <a href="/jobs">Jobs</a>
+            <a href="/runs">Runs</a>
+            <a href="/articles">Articles</a>
+            <a href="/preferences">Preferences</a>
+        </div>
+        {{if .User}}
+        <div class="nav-user">{{.User.Email}}</div>
+        {{end}}
+    </nav>
+    <main class="container">
+        {{template "content" .}}
+    </main>
+    {{if .CSRFToken}}
+    <script>window.CSRF_TOKEN = "{{.CSRFToken}}";</script>
+    {{end}}
+    <script src="/static/app.js"></script>
+</body>
+</html>
+{{end}}

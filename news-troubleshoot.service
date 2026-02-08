@@ -1,0 +1,12 @@
+[Unit]
+Description=Troubleshoot news-app job runs
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/home/exedev/news-app/troubleshoot-runs.sh
+User=exedev
+WorkingDirectory=/home/exedev/news-app
+
+[Install]
+WantedBy=multi-user.target

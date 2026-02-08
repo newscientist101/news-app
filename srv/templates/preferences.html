@@ -1,0 +1,43 @@
+{{define "content"}}
+<h1>Preferences</h1>
+
+<form id="prefsForm" class="form">
+    <div class="form-group">
+        <label for="systemPrompt">System Prompt</label>
+        <textarea id="systemPrompt" name="systemPrompt" rows="6" placeholder="Enter custom instructions for the news retrieval agent...">{{if .Preferences}}{{.Preferences.SystemPrompt}}{{end}}</textarea>
+        <p class="form-help">This prompt will be included in all job executions. Use it to customize how the agent searches and summarizes news.</p>
+    </div>
+    
+    <h2>Discord Notifications</h2>
+    
+    <div class="form-group">
+        <label for="discordWebhook">Discord Webhook URL</label>
+        <input type="url" id="discordWebhook" name="discordWebhook" placeholder="https://discord.com/api/webhooks/..." value="{{if .Preferences}}{{.Preferences.DiscordWebhook}}{{end}}">
+    </div>
+    
+    <div class="form-group">
+        <label class="checkbox-label">
+            <input type="checkbox" id="notifySuccess" name="notifySuccess" {{if and .Preferences (eq .Preferences.NotifySuccess 1)}}checked{{end}}>
+            Notify on successful job completion
+        </label>
+    </div>
+    
+    <div class="form-group">
+        <label class="checkbox-label">
+            <input type="checkbox" id="notifyFailure" name="notifyFailure" {{if and .Preferences (eq .Preferences.NotifyFailure 1)}}checked{{end}}>
+            Notify on job failure
+        </label>
+    </div>
+    
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Save Preferences</button>
+    </div>
+</form>
+
+<script>
+document.getElementById('prefsForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    submitPreferencesForm(e.target);
+});
+</script>
+{{end}}

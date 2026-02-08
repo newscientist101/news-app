@@ -1,0 +1,173 @@
+{{define "content"}}
+<div class="section-header">
+    <h1>Job Runs</h1>
+</div>
+
+<h2>In Progress</h2>
+{{if .RunningRuns}}
+<table class="table">
+    <thead>
+        <tr>
+            <th>Run #</th>
+            <th>Job</th>
+            <th>Started</th>
+            <th>Duration</th>
+            <th>Articles</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .RunningRuns}}
+        <tr>
+            <td>{{.ID}}</td>
+            <td><a href="/jobs/{{.JobID}}">{{.JobName}}</a></td>
+            <td>{{.StartedAt.Format "Jan 02 15:04:05"}}</td>
+            <td class="run-duration" data-started="{{.StartedAt.Unix}}">calculating...</td>
+            <td>{{if .ArticlesSaved}}{{.ArticlesSaved}}{{else}}0{{end}}</td>
+            <td>
+                {{if .LogPath}}
+                <button class="btn btn-sm" onclick="viewLog({{.ID}})" title="View live log">📄 Log</button>
+                {{end}}
+                <button class="btn btn-sm btn-danger" onclick="cancelRun({{.ID}})" title="Cancel run">⏹ Cancel</button>
+            </td>
+        </tr>
+        {{end}}
+    </tbody>
+</table>
+{{else}}
+<p class="empty-state">No jobs currently running.</p>
+{{end}}
+
+<h2>Recent Runs</h2>
+{{if .RecentRuns}}
+<table class="table">
+    <thead>
+        <tr>
+            <th>Run #</th>
+            <th>Job</th>
+            <th>Status</th>
+            <th>Articles</th>
+            <th>Duplicates</th>
+            <th>Started</th>
+            <th>Completed</th>
+            <th>Duration</th>
+            <th>Error</th>
+            <th>Log</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .RecentRuns}}
+        <tr>
+            <td>{{.ID}}</td>
+            <td><a href="/jobs/{{.JobID}}">{{.JobName}}</a></td>
+            <td><span class="status status-{{.Status}}">{{.Status}}</span></td>
+            <td>{{if .ArticlesSaved}}{{.ArticlesSaved}}{{else}}0{{end}}</td>
+            <td>{{if .DuplicatesSkipped}}{{.DuplicatesSkipped}}{{else}}0{{end}}</td>
+            <td>{{.StartedAt.Format "Jan 02 15:04:05"}}</td>
+            <td>{{if .CompletedAt}}{{.CompletedAt.Format "Jan 02 15:04:05"}}{{else}}-{{end}}</td>
+            <td>
+                {{if .CompletedAt}}
+                    {{$duration := .CompletedAt.Sub .StartedAt}}
+                    {{$minutes := $duration.Minutes | printf "%.0f"}}
+                    {{$seconds := $duration.Seconds | printf "%.0f"}}
+                    {{if ge $duration.Minutes 1.0}}{{$minutes}}m{{else}}{{$seconds}}s{{end}}
+                {{else}}
+                    <span class="run-duration" data-started="{{.StartedAt.Unix}}">calculating...</span>
+                {{end}}
+            </td>
+            <td class="truncate">{{if .ErrorMessage}}{{.ErrorMessage}}{{else}}-{{end}}</td>
+            <td>
+                {{if .LogPath}}
+                <button class="btn btn-sm" onclick="viewLog({{.ID}})" title="View execution log">📄 Log</button>
+                {{else}}
+                <span class="text-muted">-</span>
+                {{end}}
+            </td>
+        </tr>
+        {{end}}
+    </tbody>
+</table>
+{{else}}
+<p class="empty-state">No job runs yet.</p>
+{{end}}
+
+<!-- Log Viewer Modal -->
+<div id="logModal" class="modal" style="display:none;">
+    <div class="modal-content modal-lg">
+        <div class="modal-header">
+            <h3>Run Log</h3>
+            <button class="modal-close" onclick="closeLogModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <pre id="logContent" class="log-viewer">Loading...</pre>
+        </div>
+        <div class="modal-footer">
+            <label><input type="checkbox" id="autoRefreshLog"> Auto-refresh (running jobs)</label>
+            <button class="btn" onclick="closeLogModal()">Close</button>
+        </div>
+    </div>
+</div>
+
+<script>
+let logRefreshInterval = null;
+
+function viewLog(runId) {
+    document.getElementById('logModal').style.display = 'flex';
+    document.getElementById('logContent').textContent = 'Loading...';
+    fetchLog(runId);
+    
+    // Set up auto-refresh if checkbox is checked
+    document.getElementById('autoRefreshLog').onchange = function() {
+        if (this.checked) {
+            logRefreshInterval = setInterval(() => fetchLog(runId), 5000);
+        } else if (logRefreshInterval) {
+            clearInterval(logRefreshInterval);
+            logRefreshInterval = null;
+        }
+    };
+}
+
+function fetchLog(runId) {
+    fetch(`/api/runs/${runId}/log`)
+        .then(resp => {
+            if (!resp.ok) throw new Error('Log not available');
+            return resp.text();
+        })
+        .then(text => {
+            const pre = document.getElementById('logContent');
+            pre.textContent = text || '(empty log)';
+            // Auto-scroll to bottom
+            pre.scrollTop = pre.scrollHeight;
+        })
+        .catch(err => {
+            document.getElementById('logContent').textContent = 'Error loading log: ' + err.message;
+        });
+}
+
+function closeLogModal() {
+    document.getElementById('logModal').style.display = 'none';
+    if (logRefreshInterval) {
+        clearInterval(logRefreshInterval);
+        logRefreshInterval = null;
+    }
+    document.getElementById('autoRefreshLog').checked = false;
+}
+
+// Close modal on escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeLogModal();
+});
+
+// Close modal on backdrop click
+document.getElementById('logModal').addEventListener('click', function(e) {
+    if (e.target === this) closeLogModal();
+});
+</script>
+
+{{if .RunningRuns}}
+<script>
+// Auto-refresh for in-progress runs
+setInterval(() => location.reload(), 30000);
+</script>
+{{end}}
+{{end}}

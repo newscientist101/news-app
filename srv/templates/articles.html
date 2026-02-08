@@ -1,0 +1,252 @@
+{{define "content"}}
+<div class="section-header">
+    <h1>Articles</h1>
+</div>
+
+<div class="filters">
+    <span>Filter: </span>
+    <a href="/articles{{if .SearchQuery}}?q={{.SearchQuery}}{{end}}" class="btn btn-sm {{if and (eq .DateFilter "") (eq .JobFilter 0)}}btn-primary{{end}}">All</a>
+    <a href="/articles?filter=day{{if .SearchQuery}}&q={{.SearchQuery}}{{end}}" class="btn btn-sm {{if eq .DateFilter "day"}}btn-primary{{end}}">Last 24 hours</a>
+    <a href="/articles?filter=week{{if .SearchQuery}}&q={{.SearchQuery}}{{end}}" class="btn btn-sm {{if eq .DateFilter "week"}}btn-primary{{end}}">Last week</a>
+    <a href="/articles?filter=month{{if .SearchQuery}}&q={{.SearchQuery}}{{end}}" class="btn btn-sm {{if eq .DateFilter "month"}}btn-primary{{end}}">Last month</a>
+    <span class="filter-separator">|</span>
+    <form method="get" action="/articles" class="date-range-form">
+        {{if .SearchQuery}}<input type="hidden" name="q" value="{{.SearchQuery}}">{{end}}
+        <input type="date" name="from" value="{{.DateFrom}}" placeholder="From">
+        <input type="date" name="to" value="{{.DateTo}}" placeholder="To">
+        <button type="submit" class="btn btn-sm">Apply</button>
+    </form>
+    <span class="filter-separator">|</span>
+    <select id="job-filter" onchange="filterByJob(this.value)">
+        <option value="">All Jobs</option>
+        {{range .Jobs}}
+        <option value="{{.ID}}" {{if eq $.JobFilter .ID}}selected{{end}}>{{.Name}}</option>
+        {{end}}
+    </select>
+    <span class="filter-separator">|</span>
+    <input type="text" id="search-input" placeholder="Search..." value="{{.SearchQuery}}">
+    <a href="/articles" class="btn btn-sm" id="search-clear" {{if not .SearchQuery}}style="display:none"{{end}}>Clear</a>
+</div>
+
+<p id="article-count">
+{{if .SearchQuery}}Showing {{.TotalCount}} articles matching "{{.SearchQuery}}"
+{{else if gt .JobFilter 0}}Showing {{.TotalCount}} articles from job{{range .Jobs}}{{if eq $.JobFilter .ID}} "{{.Name}}"{{end}}{{end}}
+{{else if .DateFilter}}Showing {{.TotalCount}} articles (filtered)
+{{else}}Showing {{.TotalCount}} articles{{end}}
+</p>
+
+<div class="bulk-actions">
+    <label class="checkbox-label">
+        <input type="checkbox" id="select-all"> Select all on this page
+    </label>
+    <span id="selected-count"></span>
+    <button type="button" class="btn btn-sm btn-danger" id="delete-selected" disabled>Delete Selected</button>
+</div>
+
+<div id="articles-container">
+{{if .Articles}}
+<form id="articles-form">
+    <div class="articles-list">
+        {{range .Articles}}
+        <div class="article-card has-checkbox">
+            <div class="article-checkbox">
+                <input type="checkbox" name="article_ids" value="{{.ID}}" class="article-select">
+            </div>
+            <div class="article-content">
+                <h4><a href="/articles/{{.ID}}">{{.Title}}</a></h4>
+                {{if .Summary}}
+                <p class="summary">{{.Summary}}</p>
+                {{end}}
+                <div class="meta">
+                    <span>Retrieved: {{.RetrievedAt.Format "Jan 2, 2006 3:04 PM"}}</span>
+                    {{if .Url}}
+                    <a href="{{.Url}}" target="_blank" rel="noopener">Original →</a>
+                    {{end}}
+                </div>
+            </div>
+        </div>
+        {{end}}
+    </div>
+</form>
+
+{{if gt .TotalCount 50}}
+<div class="pagination">
+    {{if gt .Page 1}}
+    <a href="/articles?page={{subtract .Page 1}}{{if .DateFilter}}&filter={{.DateFilter}}{{end}}{{if .DateFrom}}&from={{.DateFrom}}{{end}}{{if .DateTo}}&to={{.DateTo}}{{end}}{{if .SearchQuery}}&q={{.SearchQuery}}{{end}}" class="btn">← Previous</a>
+    {{end}}
+    <span>Page {{.Page}}</span>
+    {{if lt (multiply .Page 50) .TotalCount}}
+    <a href="/articles?page={{add .Page 1}}{{if .DateFilter}}&filter={{.DateFilter}}{{end}}{{if .DateFrom}}&from={{.DateFrom}}{{end}}{{if .DateTo}}&to={{.DateTo}}{{end}}{{if .SearchQuery}}&q={{.SearchQuery}}{{end}}" class="btn">Next →</a>
+    {{end}}
+</div>
+{{end}}
+
+{{else}}
+<p class="empty-state">No articles found.</p>
+{{end}}
+</div>
+
+<script>
+function filterByJob(jobId) {
+    const url = new URL(window.location.href);
+    if (jobId) {
+        url.searchParams.set('job', jobId);
+    } else {
+        url.searchParams.delete('job');
+    }
+    url.searchParams.delete('page');
+    url.searchParams.delete('filter');
+    url.searchParams.delete('from');
+    url.searchParams.delete('to');
+    window.location.href = url.toString();
+}
+
+function updateSelectedCount() {
+    const selected = document.querySelectorAll('.article-select:checked').length;
+    const countEl = document.getElementById('selected-count');
+    const deleteBtn = document.getElementById('delete-selected');
+    
+    if (countEl) {
+        countEl.textContent = selected > 0 ? selected + ' selected' : '';
+    }
+    if (deleteBtn) {
+        deleteBtn.disabled = selected === 0;
+    }
+    
+    // Update select-all checkbox state
+    const total = document.querySelectorAll('.article-select').length;
+    const selectAll = document.getElementById('select-all');
+    if (selectAll) {
+        selectAll.checked = selected === total && total > 0;
+        selectAll.indeterminate = selected > 0 && selected < total;
+    }
+}
+
+function attachCheckboxListeners() {
+    // Select all checkbox
+    const selectAll = document.getElementById('select-all');
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            document.querySelectorAll('.article-select').forEach(cb => cb.checked = this.checked);
+            updateSelectedCount();
+        });
+    }
+    
+    // Individual checkboxes
+    document.querySelectorAll('.article-select').forEach(cb => {
+        cb.addEventListener('change', updateSelectedCount);
+    });
+    updateSelectedCount();
+}
+
+// Initial setup
+attachCheckboxListeners();
+
+// Delete button
+document.getElementById('delete-selected')?.addEventListener('click', async function() {
+    const selected = document.querySelectorAll('.article-select:checked');
+    const ids = Array.from(selected).map(cb => parseInt(cb.value));
+    
+    if (ids.length === 0) return;
+    
+    if (!confirm(`Delete ${ids.length} article${ids.length > 1 ? 's' : ''}? This cannot be undone.`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/articles/delete', {
+            method: 'POST',
+            headers: getCsrfHeaders(),
+            body: JSON.stringify({ ids: ids })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            // Remove deleted articles from DOM
+            ids.forEach(id => {
+                const checkbox = document.querySelector(`.article-select[value="${id}"]`);
+                if (checkbox) {
+                    checkbox.closest('.article-card').remove();
+                }
+            });
+            
+            // Update count
+            const countEl = document.getElementById('article-count');
+            if (countEl) {
+                const currentText = countEl.textContent;
+                const match = currentText.match(/\d+/);
+                if (match) {
+                    const newCount = parseInt(match[0]) - result.deleted;
+                    countEl.textContent = currentText.replace(/\d+/, newCount);
+                }
+            }
+            
+            updateSelectedCount();
+            
+            if (result.errors && result.errors.length > 0) {
+                alert(`Deleted ${result.deleted} articles. Errors: ${result.errors.join(', ')}`);
+            }
+        } else {
+            alert('Error: ' + (result.error || 'Failed to delete articles'));
+        }
+    } catch (err) {
+        alert('Error: ' + err.message);
+    }
+});
+
+// Live search with debounce
+let searchTimeout;
+const searchInput = document.getElementById('search-input');
+if (searchInput) {
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        const input = this;
+        searchTimeout = setTimeout(async () => {
+            const query = input.value.trim();
+            const url = new URL(window.location.href);
+            if (query) {
+                url.searchParams.set('q', query);
+            } else {
+                url.searchParams.delete('q');
+            }
+            url.searchParams.delete('page'); // Reset to page 1
+            
+            try {
+                const response = await fetch(url.toString());
+                const html = await response.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                
+                // Update the articles container
+                const newContent = doc.getElementById('articles-container');
+                const currentContent = document.getElementById('articles-container');
+                if (newContent && currentContent) {
+                    currentContent.innerHTML = newContent.innerHTML;
+                    // Re-attach checkbox listeners
+                    attachCheckboxListeners();
+                }
+                
+                // Update the article count
+                const newCount = doc.getElementById('article-count');
+                const currentCount = document.getElementById('article-count');
+                if (newCount && currentCount) {
+                    currentCount.innerHTML = newCount.innerHTML;
+                }
+                
+                // Update URL without reload
+                history.pushState(null, '', url.toString());
+                
+                // Update clear button visibility
+                const clearBtn = document.getElementById('search-clear');
+                if (clearBtn) {
+                    clearBtn.style.display = query ? 'inline-block' : 'none';
+                }
+            } catch (err) {
+                console.error('Search failed:', err);
+            }
+        }, 300); // 300ms debounce
+    });
+}
+</script>
+{{end}}

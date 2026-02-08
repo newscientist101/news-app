@@ -1,0 +1,60 @@
+{{define "content"}}
+<h1>Dashboard</h1>
+
+<div id="successMessage" class="alert alert-success" style="display: none;"></div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-value">{{len .Jobs}}</div>
+        <div class="stat-label">Active Jobs</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{.TotalCount}}</div>
+        <div class="stat-label">Articles Retrieved</div>
+    </div>
+</div>
+
+<div class="section">
+    <div class="section-header">
+        <h2>Recent Jobs</h2>
+        <a href="/jobs/new" class="btn btn-primary">+ New Job</a>
+    </div>
+    
+    {{if .Jobs}}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Frequency</th>
+                <th>Status</th>
+                <th>Last Run</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Jobs}}
+            <tr>
+                <td><a href="/jobs/{{.ID}}">{{.Name}}</a></td>
+                <td>{{if eq .IsOneTime 1}}One-time{{else}}{{.Frequency}}{{end}}</td>
+                <td><span class="status status-{{.Status}}">{{.Status}}</span></td>
+                <td>{{if .LastRunAt}}{{.LastRunAt.Format "Jan 02, 15:04"}}{{else}}-{{end}}</td>
+                <td>
+                    {{if eq .Status "running"}}
+                    <button class="btn btn-sm btn-danger" onclick="stopJob({{.ID}})" title="Stop job">⏹</button>
+                    {{else}}
+                    <button class="btn btn-sm btn-success" onclick="runJob({{.ID}})" title="Run job now">▶</button>
+                    {{end}}
+                    <a href="/jobs/{{.ID}}/edit" class="btn btn-sm btn-warning" title="Edit job">✎</a>
+                    <button class="btn btn-sm btn-danger" onclick="deleteJob({{.ID}})" title="Delete job">⌦</button>
+                </td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+    {{else}}
+    <p class="empty-state">No jobs yet. <a href="/jobs/new">Create your first job</a></p>
+    {{end}}
+</div>
+
+
+{{end}}

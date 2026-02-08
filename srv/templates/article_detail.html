@@ -1,0 +1,23 @@
+{{define "content"}}
+<div class="section-header">
+    <h1>{{.Article.Title}}</h1>
+    <a href="/articles" class="btn">← Back to Articles</a>
+</div>
+
+<div class="card">
+    {{if .Article.Url}}
+    <p><strong>Source:</strong> <a href="{{.Article.Url}}" target="_blank">{{.Article.Url}}</a></p>
+    {{end}}
+    
+    <p><strong>Retrieved:</strong> {{.Article.RetrievedAt.Format "January 02, 2006 15:04:05"}}</p>
+    
+    {{if .Article.ContentPath}}
+    <p><strong>Full Content:</strong> <a href="/api/articles/{{.Article.ID}}/content" target="_blank">View text file</a></p>
+    {{end}}
+    
+    {{if .Article.Summary}}
+    <h3>Summary</h3>
+    <p>{{.Article.Summary}}</p>
+    {{end}}
+</div>
+{{end}}

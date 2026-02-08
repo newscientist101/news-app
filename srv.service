@@ -1,0 +1,15 @@
+[Unit]
+Description=News Agent Web App
+After=network.target
+
+[Service]
+Type=simple
+User=exedev
+WorkingDirectory=/home/exedev/news-app
+ExecStart=/home/exedev/news-app/news-app -listen :8000
+Restart=on-failure
+RestartSec=5
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+
+[Install]
+WantedBy=multi-user.target

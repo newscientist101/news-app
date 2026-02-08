@@ -1,0 +1,63 @@
+{{define "content"}}
+<h1>Edit Job: {{.Job.Name}}</h1>
+
+<form id="jobForm" class="form">
+    <div class="form-group">
+        <label for="name">Job Name *</label>
+        <input type="text" id="name" name="name" required value="{{.Job.Name}}" placeholder="e.g., Tech News Daily">
+    </div>
+    
+    <div class="form-group">
+        <label for="prompt">Prompt *</label>
+        <textarea id="prompt" name="prompt" rows="4" required placeholder="e.g., Find the latest news about artificial intelligence and machine learning">{{.Job.Prompt}}</textarea>
+    </div>
+    
+    <div class="form-group">
+        <label for="keywords">Keywords (comma-separated)</label>
+        <input type="text" id="keywords" name="keywords" value="{{.Job.Keywords}}" placeholder="e.g., AI, machine learning, GPT">
+    </div>
+    
+    <div class="form-group">
+        <label for="sources">Preferred Sources (comma-separated)</label>
+        <input type="text" id="sources" name="sources" value="{{.Job.Sources}}" placeholder="e.g., TechCrunch, Wired, Ars Technica">
+    </div>
+    
+    <div class="form-group">
+        <label for="region">Geographic Region</label>
+        <input type="text" id="region" name="region" value="{{.Job.Region}}" placeholder="e.g., United States, Europe, Asia">
+    </div>
+    
+    <div class="form-group">
+        <label for="frequency">Frequency</label>
+        <select id="frequency" name="frequency"{{if eq .Job.IsOneTime 1}} disabled{{end}}>
+            <option value="hourly"{{if eq .Job.Frequency "hourly"}} selected{{end}}>Hourly</option>
+            <option value="6hours"{{if eq .Job.Frequency "6hours"}} selected{{end}}>Every 6 Hours</option>
+            <option value="daily"{{if eq .Job.Frequency "daily"}} selected{{end}}>Daily</option>
+            <option value="weekly"{{if eq .Job.Frequency "weekly"}} selected{{end}}>Weekly</option>
+        </select>
+    </div>
+    
+    <div class="form-group">
+        <label class="checkbox-label">
+            <input type="checkbox" id="isActive" name="isActive"{{if eq .Job.IsActive 1}} checked{{end}}>
+            Active (job will run on schedule)
+        </label>
+    </div>
+    
+    {{if eq .Job.IsOneTime 1}}
+    <p class="info-text">This is a one-time job. Frequency cannot be changed.</p>
+    {{end}}
+    
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+        <a href="/jobs/{{.Job.ID}}" class="btn">Cancel</a>
+    </div>
+</form>
+
+<script>
+document.getElementById('jobForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    submitJobForm(e.target, 'PUT', '/api/jobs/{{.Job.ID}}', '/jobs/{{.Job.ID}}');
+});
+</script>
+{{end}}
