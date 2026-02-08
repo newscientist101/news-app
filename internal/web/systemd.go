@@ -151,3 +151,20 @@ func runJobDirectly(jobID int64) {
 		cmd.Wait() // Clean up zombie process
 	}()
 }
+
+// resumeRunDirectly resumes an existing job run as a separate process.
+func resumeRunDirectly(runID int64) {
+	cmd := exec.Command(jobRunnerPath, "resume-run", fmt.Sprintf("%d", runID))
+	cmd.Dir = workingDir
+	
+	// Run in background - don't wait for completion
+	if err := cmd.Start(); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to resume run %d: %v\n", runID, err)
+		return
+	}
+	
+	// Detach - don't wait for it to finish
+	go func() {
+		cmd.Wait() // Clean up zombie process
+	}()
+}

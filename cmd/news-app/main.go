@@ -29,6 +29,8 @@ func run() error {
 		switch os.Args[1] {
 		case "run-job":
 			return runJobCmd(os.Args[2:])
+		case "resume-run":
+			return resumeRunCmd(os.Args[2:])
 		case "cleanup":
 			return cleanupCmd(os.Args[2:])
 		case "troubleshoot":
@@ -51,6 +53,7 @@ func printUsage() {
 Commands:
   (default)              Start the web server
   run-job <id>           Execute a news job by ID
+  resume-run <run_id>    Resume an interrupted job run
   cleanup                Clean up old Shelley conversations
   troubleshoot           Diagnose failed job runs
   process-articles       Process articles from JSON file
@@ -107,6 +110,56 @@ func runJobCmd(args []string) error {
 	runner := jobrunner.NewRunner(dbConn, config)
 	go func() {
 		errChan <- runner.Run(ctx, jobID)
+	}()
+
+	// Wait for completion or signal
+	select {
+	case err := <-errChan:
+		return err
+	case sig := <-sigChan:
+		fmt.Fprintf(os.Stderr, "\nReceived signal %v, shutting down gracefully...\n", sig)
+		cancel() // Cancel context to stop job gracefully
+		
+		// Wait up to 10 seconds for graceful shutdown
+		select {
+		case err := <-errChan:
+			return err
+		case <-time.After(10 * time.Second):
+			return fmt.Errorf("shutdown timeout")
+		}
+	}
+}
+
+func resumeRunCmd(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: news-app resume-run <run_id>")
+	}
+
+	runID, err := strconv.ParseInt(args[0], 10, 64)
+	if err != nil {
+		return fmt.Errorf("invalid run ID: %w", err)
+	}
+
+	// Open database
+	config := jobrunner.DefaultConfig()
+	dbConn, err := db.Open(config.DBPath)
+	if err != nil {
+		return fmt.Errorf("open database: %w", err)
+	}
+	defer dbConn.Close()
+
+	// Set up context with signal handling for graceful shutdown
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+	// Resume run in goroutine
+	errChan := make(chan error, 1)
+	runner := jobrunner.NewRunner(dbConn, config)
+	go func() {
+		errChan <- runner.Resume(ctx, runID)
 	}()
 
 	// Wait for completion or signal

@@ -78,6 +78,59 @@ func NewRunner(db *sql.DB, config Config) *Runner {
 }
 
 // Run executes a job by ID. This is the main entry point.
+// Resume continues an existing job run that was interrupted.
+func (r *Runner) Resume(ctx context.Context, runID int64) error {
+	// Load the existing run
+	var run struct {
+		ID      int64
+		JobID   int64
+		Status  string
+		LogPath string
+	}
+
+	err := r.db.QueryRowContext(ctx, `
+		SELECT id, job_id, status, log_path FROM job_runs WHERE id=?
+	`, runID).Scan(&run.ID, &run.JobID, &run.Status, &run.LogPath)
+	if err != nil {
+		return fmt.Errorf("run not found: %w", err)
+	}
+
+	if run.Status != "running" {
+		return fmt.Errorf("run %d is not in running state (status: %s)", runID, run.Status)
+	}
+
+	// Load job and preferences
+	job, err := r.queries.GetJobByID(ctx, run.JobID)
+	if err != nil {
+		return fmt.Errorf("job not found: %w", err)
+	}
+
+	prefs, err := r.queries.GetPreferences(ctx, job.UserID)
+	if err != nil && err != sql.ErrNoRows {
+		return fmt.Errorf("get preferences: %w", err)
+	}
+
+	// Set up logging to file (append mode)
+	if err := r.setupLoggingAppend(run.LogPath); err != nil {
+		r.logger.Warn("setup logging", "error", err)
+	}
+	defer r.closeLogging()
+
+	r.logger.Info("resuming job run",
+		"job_id", run.JobID,
+		"run_id", run.ID,
+		"job_name", job.Name,
+	)
+
+	// Execute the job (will check for existing conversation)
+	result := r.executeJob(ctx, job, prefs)
+
+	// Finalize the run
+	r.finalizeRun(ctx, job, run.ID, result, prefs)
+
+	return result.Error
+}
+
 func (r *Runner) Run(ctx context.Context, jobID int64) error {
 	// Random delay to stagger concurrent job starts
 	if r.config.StartDelay > 0 {
@@ -595,6 +648,24 @@ func (r *Runner) setupLogging(runID int64) error {
 	r.logger = slog.New(slog.NewTextHandler(multiWriter, &slog.HandlerOptions{
 		Level: slog.LevelInfo,
 	}))
+
+	return nil
+}
+
+func (r *Runner) setupLoggingAppend(logPath string) error {
+	// Open existing log file in append mode
+	var err error
+	r.logFile, err = os.OpenFile(logPath, os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+
+	// Create multi-writer: log to both file and original logger
+	multi := io.MultiWriter(r.logFile, os.Stderr)
+
+	// Replace logger handler to write to file
+	handler := slog.NewTextHandler(multi, &slog.HandlerOptions{})
+	r.logger = slog.New(handler)
 
 	return nil
 }

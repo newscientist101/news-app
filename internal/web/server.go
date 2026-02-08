@@ -450,7 +450,7 @@ func (s *Server) jsonStatus(w http.ResponseWriter, status string) {
 	s.jsonOK(w, map[string]string{"status": status})
 }
 
-// recoverStuckJobs resumes any jobs stuck in "running" state on startup.
+// recoverStuckJobs resumes any job runs stuck in "running" state on startup.
 // This handles the case where the server was killed/restarted while jobs were running.
 func (s *Server) recoverStuckJobs() error {
 	ctx := context.Background()
@@ -492,47 +492,12 @@ func (s *Server) recoverStuckJobs() error {
 		return nil
 	}
 
-	slog.Info("recovering stuck jobs", "count", len(stuckRuns))
+	slog.Info("recovering stuck runs", "count", len(stuckRuns))
 
-	// Group by job_id to avoid restarting the same job multiple times
-	seenJobs := make(map[int64]bool)
-
-	// Mark the stuck runs as failed, reset job status, then restart the jobs
-	// The new run will check for existing conversations and resume them
+	// Resume each stuck run directly (don't create new runs)
 	for _, run := range stuckRuns {
-		// Mark old run as failed
-		_, err := s.DB.ExecContext(ctx, `
-			UPDATE job_runs 
-			SET status='failed', 
-			    error_message='interrupted by service restart (auto-restarting)',
-			    completed_at=datetime('now')
-			WHERE id=?
-		`, run.ID)
-		if err != nil {
-			slog.Warn("failed to mark run as failed", "run_id", run.ID, "error", err)
-			continue
-		}
-
-		// Reset job status so new run can proceed
-		_, err = s.DB.ExecContext(ctx, `
-			UPDATE jobs 
-			SET status='idle'
-			WHERE id=?
-		`, run.JobID)
-		if err != nil {
-			slog.Warn("failed to reset job status", "job_id", run.JobID, "error", err)
-			continue
-		}
-
-		// Restart the job - it will resume from existing conversation if one exists
-		// Only restart each job once, even if multiple runs were stuck
-		if !seenJobs[run.JobID] {
-			seenJobs[run.JobID] = true
-			slog.Info("restarting job", "run_id", run.ID, "job_id", run.JobID, "job_name", run.JobName)
-			go runJobDirectly(run.JobID)
-		} else {
-			slog.Info("skipping duplicate restart", "run_id", run.ID, "job_id", run.JobID)
-		}
+		slog.Info("resuming run", "run_id", run.ID, "job_id", run.JobID, "job_name", run.JobName)
+		go resumeRunDirectly(run.ID)
 	}
 
 	return nil
