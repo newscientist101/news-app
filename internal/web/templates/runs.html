@@ -33,7 +33,7 @@
             </td>
             <td>
                 {{if .LogPath}}
-                <button class="btn btn-sm" onclick="viewLog({{.ID}})" title="View live log">📄 Log</button>
+                <a href="#" onclick="viewLog({{.ID}}); return false;">View log</a>
                 {{end}}
                 <button class="btn btn-sm btn-danger" onclick="cancelRun({{.ID}})" title="Cancel run">⏹ Cancel</button>
             </td>
@@ -94,7 +94,7 @@
             <td class="truncate">{{if .ErrorMessage}}{{.ErrorMessage}}{{else}}-{{end}}</td>
             <td>
                 {{if .LogPath}}
-                <button class="btn btn-sm" onclick="viewLog({{.ID}})" title="View execution log">📄 Log</button>
+                <a href="#" onclick="viewLog({{.ID}}); return false;">View log</a>
                 {{else}}
                 <span class="text-muted">-</span>
                 {{end}}
