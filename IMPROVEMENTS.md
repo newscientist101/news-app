@@ -222,8 +222,10 @@ Values like `50` (page limit), `1500` (timeout), `60` (random delay) should be c
 
 **Resolution:** Extracted to named constants - Go: DefaultPageLimit, RateLimitWindow, RateLimitRequests, StaticCacheMaxAge. Bash: JOB_START_DELAY_MAX, POLL_INTERVAL, MAX_WAIT (default 1500s/25min).
 
-### 23. Long Functions
+### 23. Long Functions ✅ COMPLETED
 `handleArticlesList` is ~100 lines. Consider breaking into smaller functions.
+
+**Resolution:** Refactored into: articlesFilter struct, parseArticlesFilters(), queryArticles(), and searchArticles(). Main handler is now ~25 lines.
 
 ### 24. No Logging in Handlers
 Most handlers don't log anything. Add request logging for debugging.
