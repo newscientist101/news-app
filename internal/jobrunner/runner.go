@@ -125,6 +125,15 @@ func (r *Runner) Resume(ctx context.Context, runID int64) error {
 	// Execute the job (will check for existing conversation)
 	result := r.executeJob(ctx, job, prefs)
 
+	// If the context was cancelled (e.g. SIGTERM during restart), leave the run
+	// in "running" state so it can be resumed on next startup. Don't finalize
+	// or send notifications — that should only happen at the real end of a run.
+	if ctx.Err() != nil {
+		r.logger.Info("context cancelled, leaving run in running state for resume",
+			"run_id", run.ID, "reason", ctx.Err())
+		return ctx.Err()
+	}
+
 	// Finalize the run
 	r.finalizeRun(ctx, job, run.ID, result, prefs)
 
@@ -182,6 +191,15 @@ func (r *Runner) Run(ctx context.Context, jobID int64) error {
 
 	// Execute the job
 	result := r.executeJob(ctx, job, prefs)
+
+	// If the context was cancelled (e.g. SIGTERM during restart), leave the run
+	// in "running" state so it can be resumed on next startup. Don't finalize
+	// or send notifications — that should only happen at the real end of a run.
+	if ctx.Err() != nil {
+		r.logger.Info("context cancelled, leaving run in running state for resume",
+			"run_id", run.ID, "reason", ctx.Err())
+		return ctx.Err()
+	}
 
 	// Update final status
 	r.finalizeRun(ctx, job, run.ID, result, prefs)
