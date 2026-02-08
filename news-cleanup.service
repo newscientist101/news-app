@@ -1,3 +1,10 @@
+# News App - Conversation Cleanup Service
+#
+# Cleans up old Shelley conversations (older than 48 hours)
+# to prevent database bloat.
+#
+# See docs/DEPLOYMENT.md for details.
+#
 [Unit]
 Description=Cleanup old news-app conversations
 After=network.target

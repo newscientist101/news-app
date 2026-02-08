@@ -1,3 +1,7 @@
+# News App - Conversation Cleanup Timer
+#
+# Runs cleanup every 48 hours.
+#
 [Unit]
 Description=Run news-app conversation cleanup every 48 hours
 

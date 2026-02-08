@@ -1,3 +1,10 @@
+# News App - Main Web Server Service
+# 
+# This is a template. The setup script generates the actual service file.
+# See docs/DEPLOYMENT.md for details.
+#
+# Install with: sudo ./scripts/setup-systemd.sh
+#
 [Unit]
 Description=News Agent Web App
 After=network.target
@@ -10,6 +17,7 @@ ExecStart=/home/exedev/news-app/news-app -listen :8000
 Restart=on-failure
 RestartSec=5
 Environment=PATH=/usr/local/bin:/usr/bin:/bin
+Environment=NEWS_APP_SHELLEY_API=http://localhost:9999
 
 [Install]
 WantedBy=multi-user.target

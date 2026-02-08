@@ -6,16 +6,16 @@ A multi-user web app that retrieves news articles using the Shelley AI agent. Us
 
 ```bash
 # Build
-make build
+go build -o news-app ./cmd/srv/
 
-# Run locally
+# Install systemd services
+sudo ./scripts/setup-systemd.sh
+
+# Or run locally without systemd
 ./news-app -listen :8000
-
-# Or restart the systemd service
-sudo systemctl restart news-app
 ```
 
-Access at: https://anchor-asteroid.exe.xyz:8000/
+Access at: http://localhost:8000/
 
 ## Features
 
@@ -26,17 +26,12 @@ Access at: https://anchor-asteroid.exe.xyz:8000/
 - **User Preferences**: Custom system prompts, Discord webhook notifications
 - **Multi-user**: Each user has their own jobs and articles
 
-## Architecture
+## Documentation
 
-See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for detailed system design.
-
-## Building
-
-See [BUILD.md](docs/BUILD.md) for build instructions and development setup.
-
-## Agents
-
-See [AGENTS.MD](docs/AGENTS.md) for agent instructions.
+- [ARCHITECTURE.md](docs/ARCHITECTURE.md) - System design and data flow
+- [DEPLOYMENT.md](docs/DEPLOYMENT.md) - Systemd services and deployment guide
+- [BUILD.md](docs/BUILD.md) - Build instructions and development setup
+- [AGENTS.md](docs/AGENTS.md) - Agent instructions for AI assistants
 
 ## Code Layout
 
@@ -50,16 +45,42 @@ news-app/
 │   ├── systemd.go    # Job scheduling
 │   ├── templates/    # HTML templates
 │   └── static/       # CSS, JS
+├── jobrunner/        # Job execution (Go implementation)
+│   ├── runner.go     # Main job logic
+│   ├── shelley.go    # Shelley API client
+│   ├── content.go    # Article content extraction
+│   └── discord.go    # Discord notifications
 ├── db/
 │   ├── db.go         # Database setup
 │   ├── migrations/   # SQL migrations
 │   ├── queries/      # sqlc queries
 │   └── dbgen/        # Generated code
+├── scripts/
+│   └── setup-systemd.sh  # Service installation script
 ├── articles/         # Stored article content
-│   └── job_{id}/     # Per-job folders
-├── run-job.sh        # Job runner script
-└── db.sqlite3        # SQLite database
+└── logs/             # Job run logs
 ```
+
+## Systemd Services
+
+The app uses several systemd services for scheduling and maintenance:
+
+| Service | Purpose |
+|---------|---------|
+| `news-app.service` | Main web server |
+| `news-job-{id}.service` | Individual job execution |
+| `news-job-{id}.timer` | Job scheduling |
+| `news-cleanup.timer` | Clean old Shelley conversations (every 48h) |
+| `news-troubleshoot.timer` | Auto-diagnose failed runs (daily) |
+
+See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for details.
+
+## Requirements
+
+- Go 1.21+
+- SQLite3
+- Shelley API instance (default: localhost:9999)
+- Linux with systemd (for scheduled jobs)
 
 ## License
 

@@ -1,3 +1,10 @@
+# News App - Troubleshoot Service
+#
+# Automatically diagnoses failed job runs by querying the database
+# and creating a Shelley conversation with diagnostic information.
+#
+# See docs/DEPLOYMENT.md for details.
+#
 [Unit]
 Description=Troubleshoot news-app job runs
 After=network.target

@@ -1,3 +1,7 @@
+# News App - Troubleshoot Timer
+#
+# Runs daily at 07:00 to check for failed jobs.
+#
 [Unit]
 Description=Run news-app troubleshoot check daily
 
