@@ -17,7 +17,7 @@ function getToastContainer() {
     return container;
 }
 
-function showToast(type, title, message, duration = 5000) {
+function showToast(type, title, message, duration = 10000) {
     const container = getToastContainer();
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
@@ -55,7 +55,7 @@ function showSuccess(title, message) {
 }
 
 function showError(title, message) {
-    return showToast('error', title, message, 8000);
+    return showToast('error', title, message);
 }
 
 function showInfo(title, message) {
