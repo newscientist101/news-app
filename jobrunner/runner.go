@@ -39,9 +39,9 @@ func DefaultConfig() Config {
 		ArticlesDir:  util.GetEnv("NEWS_APP_ARTICLES_DIR", "/home/exedev/news-app/articles"),
 		LogsDir:      util.GetEnv("NEWS_APP_LOGS_DIR", "/home/exedev/news-app/logs/runs"),
 		ShelleyAPI:   util.GetEnv("NEWS_APP_SHELLEY_API", "http://localhost:9999"),
-		JobTimeout:   util.GetEnvDuration("NEWS_JOB_TIMEOUT", 25*time.Minute),
-		PollInterval: util.GetEnvDuration("NEWS_JOB_POLL_INTERVAL", 10*time.Second),
-		StartDelay:   util.GetEnvDuration("NEWS_JOB_START_DELAY", 60*time.Second),
+		JobTimeout:   time.Duration(util.GetEnvInt("NEWS_JOB_TIMEOUT_SECS", 25*60)) * time.Second,
+		PollInterval: time.Duration(util.GetEnvInt("NEWS_JOB_POLL_INTERVAL_SECS", 10)) * time.Second,
+		StartDelay:   time.Duration(util.GetEnvInt("NEWS_JOB_START_DELAY_SECS", 60)) * time.Second,
 		MaxParallel:  util.GetEnvInt("NEWS_JOB_MAX_PARALLEL", 5),
 	}
 }

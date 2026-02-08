@@ -16,17 +16,6 @@ func GetEnv(key, defaultVal string) string {
 	return defaultVal
 }
 
-// GetEnvDuration parses a duration from an environment variable.
-// If the value is not set or invalid, the default is returned.
-func GetEnvDuration(key string, defaultVal time.Duration) time.Duration {
-	if v := os.Getenv(key); v != "" {
-		if d, err := time.ParseDuration(v); err == nil {
-			return d
-		}
-	}
-	return defaultVal
-}
-
 // GetEnvInt parses an integer from an environment variable.
 // If the value is not set or invalid, the default is returned.
 func GetEnvInt(key string, defaultVal int) int {
