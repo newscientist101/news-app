@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -14,6 +16,7 @@ type TroubleshootConfig struct {
 	DBPath     string
 	ShelleyAPI string
 	Lookback   time.Duration
+	LogDir     string
 	DryRun     bool
 }
 
@@ -23,6 +26,7 @@ func DefaultTroubleshootConfig() TroubleshootConfig {
 		DBPath:     "db.sqlite3",
 		ShelleyAPI: "http://localhost:9999",
 		Lookback:   24 * time.Hour,
+		LogDir:     "logs/troubleshoot",
 		DryRun:     false,
 	}
 }
@@ -49,6 +53,17 @@ type TroubleshootResult struct {
 func Troubleshoot(ctx context.Context, cfg TroubleshootConfig) (*TroubleshootResult, error) {
 	logger := slog.Default()
 	result := &TroubleshootResult{}
+
+	// Ensure log directory exists
+	if err := os.MkdirAll(cfg.LogDir, 0755); err != nil {
+		return nil, fmt.Errorf("create log dir: %w", err)
+	}
+
+	// Get absolute path for the prompt
+	absLogDir, err := filepath.Abs(cfg.LogDir)
+	if err != nil {
+		absLogDir = cfg.LogDir
+	}
 
 	// Open database
 	db, err := sql.Open("sqlite", cfg.DBPath)
@@ -87,7 +102,7 @@ func Troubleshoot(ctx context.Context, cfg TroubleshootConfig) (*TroubleshootRes
 	}
 
 	// Build prompt and create conversation
-	prompt := buildTroubleshootPrompt(problems)
+	prompt := buildTroubleshootPrompt(problems, absLogDir)
 	client := NewShelleyClient(cfg.ShelleyAPI)
 
 	convID, err := client.CreateConversationAs(ctx, "news-app-troubleshoot", prompt)
@@ -152,8 +167,9 @@ func findProblemRuns(ctx context.Context, db *sql.DB, lookback time.Duration) ([
 	return problems, rows.Err()
 }
 
-func buildTroubleshootPrompt(problems []ProblemRun) string {
+func buildTroubleshootPrompt(problems []ProblemRun, logDir string) string {
 	var sb strings.Builder
+	timestamp := time.Now().Format("2006-01-02")
 
 	sb.WriteString("I need you to troubleshoot issues with the news-app job runs. ")
 	sb.WriteString("Here are the problematic runs from the last 24 hours:\n\n")
@@ -172,7 +188,7 @@ func buildTroubleshootPrompt(problems []ProblemRun) string {
 		sb.WriteString("\n")
 	}
 
-	sb.WriteString(`
+	fmt.Fprintf(&sb, `
 Please investigate:
 1. Check the systemd journal logs for these job runs: journalctl -u news-job-{job_id}.service --since '{started_at}'
 2. Check if the conversations were created and completed properly
@@ -180,11 +196,20 @@ Please investigate:
 4. Suggest fixes if you find systematic issues
 
 Key files:
-- /home/exedev/news-app/jobrunner/ - The Go job runner implementation
+- /home/exedev/news-app/internal/jobrunner/ - The Go job runner implementation
 - /home/exedev/news-app/db.sqlite3 - The database
 - Shelley API at http://localhost:9999
 
-Start by examining the logs for the most recent failed run.`)
+When you've completed your investigation, write a troubleshooting report to:
+  %s/report-%s.md
+
+The report should include:
+- Summary of issues found
+- Root cause analysis
+- Recommended fixes
+- Any actions you took
+
+Start by examining the logs for the most recent failed run.`, logDir, timestamp)
 
 	return sb.String()
 }
