@@ -172,12 +172,14 @@ Conversations are archived but subagent detection relies on API call that could 
 
 **Status:** Skipped - Shelley API likely handles this internally.
 
-### 17. No Health Check Endpoint
+### 17. No Health Check Endpoint ✅ COMPLETED
 **Issue: Operations**
 
 No `/health` endpoint for monitoring.
 
 **Recommendation:** Add basic health check that verifies DB connectivity.
+
+**Resolution:** Added GET /health endpoint that checks database connectivity and returns JSON status. Returns 200 when healthy, 503 when degraded.
 
 ### 18. Missing Form Validation Feedback
 **Issue: UX**
