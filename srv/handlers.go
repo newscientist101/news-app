@@ -140,7 +140,7 @@ func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	q := dbgen.New(s.DB)
+	q := s.Queries
 	jobs, err := q.ListJobsByUser(r.Context(), user.ID)
 	if err != nil {
 		slog.Error("failed to list jobs", "error", err, "user_id", user.ID)
@@ -170,7 +170,7 @@ func (s *Server) handleJobsList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	q := dbgen.New(s.DB)
+	q := s.Queries
 	jobs, err := q.ListJobsByUser(r.Context(), user.ID)
 	if err != nil {
 		slog.Error("failed to list jobs", "error", err, "user_id", user.ID)
@@ -219,7 +219,7 @@ func (s *Server) handleJobDetail(w http.ResponseWriter, r *http.Request) {
 	limit := int64(DefaultPageLimit)
 	offset := int64((page - 1)) * limit
 	
-	q := dbgen.New(s.DB)
+	q := s.Queries
 	job, err := q.GetJob(r.Context(), dbgen.GetJobParams{ID: id, UserID: user.ID})
 	if err != nil {
 		http.Error(w, "Job not found", 404)
@@ -265,7 +265,7 @@ func (s *Server) handleJobEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	q := dbgen.New(s.DB)
+	q := s.Queries
 	job, err := q.GetJob(r.Context(), dbgen.GetJobParams{ID: id, UserID: user.ID})
 	if err != nil {
 		http.Error(w, "Job not found", 404)
@@ -379,7 +379,7 @@ func (s *Server) handleArticlesList(w http.ResponseWriter, r *http.Request) {
 	articles, count := s.queryArticles(r, user.ID, f)
 	
 	// Get jobs list for the filter dropdown
-	q := dbgen.New(s.DB)
+	q := s.Queries
 	jobs, _ := q.ListJobsByUser(r.Context(), user.ID)
 	
 	data := PageData{
@@ -415,7 +415,7 @@ func (s *Server) handleArticleDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	q := dbgen.New(s.DB)
+	q := s.Queries
 	article, err := q.GetArticle(r.Context(), dbgen.GetArticleParams{ID: id, UserID: user.ID})
 	if err != nil {
 		http.Error(w, "Article not found", 404)
@@ -436,7 +436,7 @@ func (s *Server) handlePreferences(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	q := dbgen.New(s.DB)
+	q := s.Queries
 	prefs, err := q.GetPreferences(r.Context(), user.ID)
 	if err == sql.ErrNoRows {
 		prefs, _ = q.CreatePreferences(r.Context(), user.ID)
@@ -456,7 +456,7 @@ func (s *Server) handleRuns(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	q := dbgen.New(s.DB)
+	q := s.Queries
 	runningRuns, err := q.ListRunningJobRuns(r.Context(), user.ID)
 	if err != nil {
 		slog.Error("failed to list running job runs", "error", err, "user_id", user.ID)

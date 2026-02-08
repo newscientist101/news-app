@@ -23,6 +23,7 @@ import (
 
 type Server struct {
 	DB           *sql.DB
+	Queries      *dbgen.Queries
 	Hostname     string
 	TemplatesDir string
 	StaticDir    string
@@ -183,6 +184,7 @@ func (s *Server) setUpDatabase(dbPath string) error {
 		return fmt.Errorf("failed to open db: %w", err)
 	}
 	s.DB = wdb
+	s.Queries = dbgen.New(wdb)
 	if err := db.RunMigrations(wdb); err != nil {
 		return fmt.Errorf("failed to run migrations: %w", err)
 	}

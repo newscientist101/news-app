@@ -71,7 +71,7 @@ func (s *Server) handleCreateJob(w http.ResponseWriter, r *http.Request) {
 	
 	nextRun := util.CalculateNextRun(req.Frequency, req.IsOneTime)
 	
-	q := dbgen.New(s.DB)
+	q := s.Queries
 	job, err := q.CreateJob(r.Context(), dbgen.CreateJobParams{
 		UserID:    user.ID,
 		Name:      req.Name,
@@ -117,7 +117,7 @@ func (s *Server) handleUpdateJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	q := dbgen.New(s.DB)
+	q := s.Queries
 	err = q.UpdateJob(r.Context(), dbgen.UpdateJobParams{
 		Name:      req.Name,
 		Prompt:    req.Prompt,
@@ -160,7 +160,7 @@ func (s *Server) handleDeleteJob(w http.ResponseWriter, r *http.Request) {
 	// Remove systemd timer first
 	removeSystemdTimer(id)
 	
-	q := dbgen.New(s.DB)
+	q := s.Queries
 	err = q.DeleteJob(r.Context(), dbgen.DeleteJobParams{ID: id, UserID: user.ID})
 	if err != nil {
 		slog.Error("failed to delete job", "job_id", id, "user_id", user.ID, "error", err)
@@ -193,7 +193,7 @@ func (s *Server) handleRunJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	q := dbgen.New(s.DB)
+	q := s.Queries
 	job, err := q.GetJob(r.Context(), dbgen.GetJobParams{ID: id, UserID: user.ID})
 	if err != nil {
 		s.jsonError(w, "Job not found", 404)
@@ -231,7 +231,7 @@ func (s *Server) handleStopJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	q := dbgen.New(s.DB)
+	q := s.Queries
 	job, err := q.GetJob(r.Context(), dbgen.GetJobParams{ID: id, UserID: user.ID})
 	if err != nil {
 		s.jsonError(w, "Job not found", 404)
@@ -275,7 +275,7 @@ func (s *Server) handleCancelRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	q := dbgen.New(s.DB)
+	q := s.Queries
 	
 	// Verify the run belongs to this user
 	run, err := q.GetJobRun(r.Context(), dbgen.GetJobRunParams{ID: id, UserID: user.ID})
@@ -330,7 +330,7 @@ func (s *Server) handleUpdatePreferences(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	
-	q := dbgen.New(s.DB)
+	q := s.Queries
 	
 	// Ensure preferences exist
 	_, err = q.GetPreferences(r.Context(), user.ID)
@@ -367,7 +367,7 @@ func (s *Server) handleArticleContent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	q := dbgen.New(s.DB)
+	q := s.Queries
 	article, err := q.GetArticle(r.Context(), dbgen.GetArticleParams{ID: id, UserID: user.ID})
 	if err != nil {
 		http.Error(w, "Article not found", 404)
@@ -397,7 +397,7 @@ func (s *Server) handleRunLog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	q := dbgen.New(s.DB)
+	q := s.Queries
 	logPath, err := q.GetJobRunLogPath(r.Context(), dbgen.GetJobRunLogPathParams{ID: id, UserID: user.ID})
 	if err != nil {
 		http.Error(w, "Run not found", 404)
