@@ -408,16 +408,16 @@ func (s *Server) loadTemplates() error {
 	return nil
 }
 
-func (s *Server) renderTemplate(w http.ResponseWriter, name string, data any) error {
+func (s *Server) renderTemplate(w http.ResponseWriter, name string, data any) {
 	tmpl, ok := s.templates[name]
 	if !ok {
-		return fmt.Errorf("template %q not found", name)
+		http.Error(w, fmt.Sprintf("template %q not found", name), 500)
+		return
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := tmpl.ExecuteTemplate(w, "layout", data); err != nil {
-		return fmt.Errorf("execute template %q: %w", name, err)
+		http.Error(w, err.Error(), 500)
 	}
-	return nil
 }
 
 // parsePathID extracts and parses the "id" path parameter.
