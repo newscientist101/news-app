@@ -217,8 +217,10 @@ Some errors return "Failed to X" while others return "X not found". Standardize.
 
 **Resolution:** Standardized error message format: 400 uses "Invalid request: [reason]", 403 uses "Forbidden: [reason]", 404 uses "[Resource] not found", 429 uses "Rate limit exceeded: [context]", 500 uses "Failed to [action]". Also replaced magic numbers with http.Status* constants.
 
-### 22. Magic Numbers
+### 22. Magic Numbers ✅ COMPLETED
 Values like `50` (page limit), `1500` (timeout), `60` (random delay) should be constants.
+
+**Resolution:** Extracted to named constants - Go: DefaultPageLimit, RateLimitWindow, RateLimitRequests, StaticCacheMaxAge. Bash: JOB_START_DELAY_MAX, POLL_INTERVAL, MAX_WAIT (default 1500s/25min).
 
 ### 23. Long Functions
 `handleArticlesList` is ~100 lines. Consider breaking into smaller functions.
