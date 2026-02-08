@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"srv.exe.dev/db/dbgen"
+	"srv.exe.dev/internal/util"
 )
 
 // parseSearchTerms splits a search query into terms, keeping quoted phrases together
@@ -51,10 +52,10 @@ func parseArticlesFilters(r *http.Request) articlesFilter {
 	q := r.URL.Query()
 
 	f := articlesFilter{
-		Page:        maxInt(parseIntParam(q.Get("page")), 1),
+		Page:        util.MaxInt(util.ParseInt(q.Get("page")), 1),
 		Limit:       int64(DefaultPageLimit),
 		SearchQuery: q.Get("q"),
-		JobFilter:   parseInt64Param(q.Get("job")),
+		JobFilter:   util.ParseInt64(q.Get("job")),
 		DateFilter:  q.Get("filter"),
 		DateFrom:    q.Get("from"),
 		DateTo:      q.Get("to"),
@@ -109,22 +110,6 @@ func (f *articlesFilter) predefinedDateOffset() time.Time {
 	}
 }
 
-func parseIntParam(s string) int {
-	v, _ := strconv.Atoi(s)
-	return v
-}
-
-func parseInt64Param(s string) int64 {
-	v, _ := strconv.ParseInt(s, 10, 64)
-	return v
-}
-
-func maxInt(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
 
 type PageData struct {
 	User         *dbgen.User

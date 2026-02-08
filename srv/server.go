@@ -10,7 +10,6 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -19,6 +18,7 @@ import (
 
 	"srv.exe.dev/db"
 	"srv.exe.dev/db/dbgen"
+	"srv.exe.dev/internal/util"
 )
 
 type Server struct {
@@ -156,10 +156,7 @@ func New(dbPath, hostname string) (*Server, error) {
 	baseDir := filepath.Dir(thisFile)
 	
 	// Use environment variable for articles dir, with fallback
-	articlesDir := "/home/exedev/news-app/articles"
-	if dir := getEnvOrDefault("NEWS_APP_ARTICLES_DIR", ""); dir != "" {
-		articlesDir = dir
-	}
+	articlesDir := util.GetEnv("NEWS_APP_ARTICLES_DIR", "/home/exedev/news-app/articles")
 	
 	srv := &Server{
 		Hostname:     hostname,
@@ -179,12 +176,6 @@ func New(dbPath, hostname string) (*Server, error) {
 	return srv, nil
 }
 
-func getEnvOrDefault(key, defaultVal string) string {
-	if val := strings.TrimSpace(os.Getenv(key)); val != "" {
-		return val
-	}
-	return defaultVal
-}
 
 func (s *Server) setUpDatabase(dbPath string) error {
 	wdb, err := db.Open(dbPath)

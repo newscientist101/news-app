@@ -6,26 +6,19 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 
 	"srv.exe.dev/db/dbgen"
+	"srv.exe.dev/internal/util"
 )
 
 // Config with defaults, overridable via environment variables
 var (
-	systemdDir    = getEnvDefault("NEWS_APP_SYSTEMD_DIR", "/etc/systemd/system")
-	jobRunnerPath = getEnvDefault("NEWS_APP_JOB_RUNNER", "/home/exedev/news-app/news-app")
-	jobRunnerArgs = getEnvDefault("NEWS_APP_JOB_RUNNER_ARGS", "run-job") // subcommand
-	workingDir    = getEnvDefault("NEWS_APP_WORKING_DIR", "/home/exedev/news-app")
-	runAsUser     = getEnvDefault("NEWS_APP_RUN_USER", "exedev")
+	systemdDir    = util.GetEnv("NEWS_APP_SYSTEMD_DIR", "/etc/systemd/system")
+	jobRunnerPath = util.GetEnv("NEWS_APP_JOB_RUNNER", "/home/exedev/news-app/news-app")
+	jobRunnerArgs = util.GetEnv("NEWS_APP_JOB_RUNNER_ARGS", "run-job") // subcommand
+	workingDir    = util.GetEnv("NEWS_APP_WORKING_DIR", "/home/exedev/news-app")
+	runAsUser     = util.GetEnv("NEWS_APP_RUN_USER", "exedev")
 )
-
-func getEnvDefault(key, defaultVal string) string {
-	if val := strings.TrimSpace(os.Getenv(key)); val != "" {
-		return val
-	}
-	return defaultVal
-}
 
 func createSystemdTimer(job dbgen.Job) error {
 	serviceName := fmt.Sprintf("news-job-%d", job.ID)

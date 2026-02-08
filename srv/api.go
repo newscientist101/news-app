@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"srv.exe.dev/db/dbgen"
+	"srv.exe.dev/internal/util"
 )
 
 type CreateJobRequest struct {
@@ -68,7 +69,7 @@ func (s *Server) handleCreateJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	nextRun := calculateNextRun(req.Frequency, req.IsOneTime)
+	nextRun := util.CalculateNextRun(req.Frequency, req.IsOneTime)
 	
 	q := dbgen.New(s.DB)
 	job, err := q.CreateJob(r.Context(), dbgen.CreateJobParams{
@@ -79,7 +80,7 @@ func (s *Server) handleCreateJob(w http.ResponseWriter, r *http.Request) {
 		Sources:   req.Sources,
 		Region:    req.Region,
 		Frequency: req.Frequency,
-		IsOneTime: boolToInt(req.IsOneTime),
+		IsOneTime: util.BoolToInt64(req.IsOneTime),
 		NextRunAt: &nextRun,
 	})
 	if err != nil {
@@ -124,7 +125,7 @@ func (s *Server) handleUpdateJob(w http.ResponseWriter, r *http.Request) {
 		Sources:   req.Sources,
 		Region:    req.Region,
 		Frequency: req.Frequency,
-		IsActive:  boolToInt(req.IsActive),
+		IsActive:  util.BoolToInt64(req.IsActive),
 		ID:        id,
 		UserID:    user.ID,
 	})
@@ -340,8 +341,8 @@ func (s *Server) handleUpdatePreferences(w http.ResponseWriter, r *http.Request)
 	err = q.UpdatePreferences(r.Context(), dbgen.UpdatePreferencesParams{
 		SystemPrompt:   req.SystemPrompt,
 		DiscordWebhook: req.DiscordWebhook,
-		NotifySuccess:  boolToInt(req.NotifySuccess),
-		NotifyFailure:  boolToInt(req.NotifyFailure),
+		NotifySuccess:  util.BoolToInt64(req.NotifySuccess),
+		NotifyFailure:  util.BoolToInt64(req.NotifyFailure),
 		UserID:         user.ID,
 	})
 	if err != nil {
@@ -418,31 +419,6 @@ func (s *Server) handleRunLog(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, logPath)
 }
 
-func boolToInt(b bool) int64 {
-	if b {
-		return 1
-	}
-	return 0
-}
-
-func calculateNextRun(frequency string, isOneTime bool) time.Time {
-	now := time.Now()
-	if isOneTime {
-		return now.Add(10 * time.Second) // Run almost immediately
-	}
-	switch frequency {
-	case "hourly":
-		return now.Add(1 * time.Hour)
-	case "6hours":
-		return now.Add(6 * time.Hour)
-	case "daily":
-		return now.Add(24 * time.Hour)
-	case "weekly":
-		return now.Add(7 * 24 * time.Hour)
-	default:
-		return now.Add(24 * time.Hour)
-	}
-}
 
 func (s *Server) handleDeleteArticles(w http.ResponseWriter, r *http.Request) {
 	user, err := s.getOrCreateUser(r)

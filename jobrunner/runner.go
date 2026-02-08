@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"srv.exe.dev/db/dbgen"
+	"srv.exe.dev/internal/util"
 )
 
 // Config holds configuration for the job runner.
@@ -34,41 +35,15 @@ type Config struct {
 // DefaultConfig returns configuration with sensible defaults.
 func DefaultConfig() Config {
 	return Config{
-		DBPath:       getEnv("NEWS_APP_DB_PATH", "/home/exedev/news-app/db.sqlite3"),
-		ArticlesDir:  getEnv("NEWS_APP_ARTICLES_DIR", "/home/exedev/news-app/articles"),
-		LogsDir:      getEnv("NEWS_APP_LOGS_DIR", "/home/exedev/news-app/logs/runs"),
-		ShelleyAPI:   getEnv("NEWS_APP_SHELLEY_API", "http://localhost:9999"),
-		JobTimeout:   getDurationEnv("NEWS_JOB_TIMEOUT", 25*time.Minute),
-		PollInterval: getDurationEnv("NEWS_JOB_POLL_INTERVAL", 10*time.Second),
-		StartDelay:   getDurationEnv("NEWS_JOB_START_DELAY", 60*time.Second),
-		MaxParallel:  getIntEnv("NEWS_JOB_MAX_PARALLEL", 5),
+		DBPath:       util.GetEnv("NEWS_APP_DB_PATH", "/home/exedev/news-app/db.sqlite3"),
+		ArticlesDir:  util.GetEnv("NEWS_APP_ARTICLES_DIR", "/home/exedev/news-app/articles"),
+		LogsDir:      util.GetEnv("NEWS_APP_LOGS_DIR", "/home/exedev/news-app/logs/runs"),
+		ShelleyAPI:   util.GetEnv("NEWS_APP_SHELLEY_API", "http://localhost:9999"),
+		JobTimeout:   util.GetEnvDuration("NEWS_JOB_TIMEOUT", 25*time.Minute),
+		PollInterval: util.GetEnvDuration("NEWS_JOB_POLL_INTERVAL", 10*time.Second),
+		StartDelay:   util.GetEnvDuration("NEWS_JOB_START_DELAY", 60*time.Second),
+		MaxParallel:  util.GetEnvInt("NEWS_JOB_MAX_PARALLEL", 5),
 	}
-}
-
-func getEnv(key, defaultVal string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
-	}
-	return defaultVal
-}
-
-func getDurationEnv(key string, defaultVal time.Duration) time.Duration {
-	if v := os.Getenv(key); v != "" {
-		if secs, err := time.ParseDuration(v); err == nil {
-			return secs
-		}
-	}
-	return defaultVal
-}
-
-func getIntEnv(key string, defaultVal int) int {
-	if v := os.Getenv(key); v != "" {
-		var i int
-		if _, err := fmt.Sscanf(v, "%d", &i); err == nil {
-			return i
-		}
-	}
-	return defaultVal
 }
 
 // Runner executes news retrieval jobs.
@@ -502,7 +477,7 @@ func (r *Runner) finalizeRun(ctx context.Context, job dbgen.Job, runID int64, re
 	// Calculate next run time
 	var nextRunAt *time.Time
 	if job.IsOneTime == 0 && result.Error == nil {
-		next := calculateNextRun(job.Frequency)
+		next := util.CalculateNextRunFromFrequency(job.Frequency)
 		nextRunAt = &next
 	}
 
@@ -541,21 +516,6 @@ func (r *Runner) finalizeRun(ctx context.Context, job dbgen.Job, runID int64, re
 	)
 }
 
-func calculateNextRun(frequency string) time.Time {
-	now := time.Now()
-	switch frequency {
-	case "hourly":
-		return now.Add(1 * time.Hour)
-	case "6hours":
-		return now.Add(6 * time.Hour)
-	case "daily":
-		return now.Add(24 * time.Hour)
-	case "weekly":
-		return now.Add(7 * 24 * time.Hour)
-	default:
-		return now.Add(24 * time.Hour)
-	}
-}
 
 func (r *Runner) sendNotification(prefs dbgen.Preference, jobName string, result JobResult) {
 	if prefs.DiscordWebhook == "" {
