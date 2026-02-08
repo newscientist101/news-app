@@ -386,7 +386,6 @@ func (s *Server) loadTemplates() error {
 		"article_detail.html",
 		"preferences.html",
 		"runs.html",
-		"welcome.html",
 	}
 	
 	for _, name := range templateFiles {
