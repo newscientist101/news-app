@@ -74,22 +74,3 @@ func CalculateNextRunFromFrequency(frequency string) time.Time {
 	}
 }
 
-// ParseInt64 parses a string to int64, returning 0 on error.
-func ParseInt64(s string) int64 {
-	v, _ := strconv.ParseInt(s, 10, 64)
-	return v
-}
-
-// ParseInt parses a string to int, returning 0 on error.
-func ParseInt(s string) int {
-	v, _ := strconv.Atoi(s)
-	return v
-}
-
-// MaxInt returns the larger of two integers.
-func MaxInt(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}

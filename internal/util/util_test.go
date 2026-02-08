@@ -55,35 +55,3 @@ func TestCalculateNextRun(t *testing.T) {
 	}
 }
 
-func TestParseInt(t *testing.T) {
-	if ParseInt("123") != 123 {
-		t.Error("expected 123")
-	}
-	if ParseInt("invalid") != 0 {
-		t.Error("expected 0 for invalid")
-	}
-	if ParseInt("") != 0 {
-		t.Error("expected 0 for empty")
-	}
-}
-
-func TestParseInt64(t *testing.T) {
-	if ParseInt64("9999999999") != 9999999999 {
-		t.Error("expected 9999999999")
-	}
-	if ParseInt64("invalid") != 0 {
-		t.Error("expected 0 for invalid")
-	}
-}
-
-func TestMaxInt(t *testing.T) {
-	if MaxInt(5, 3) != 5 {
-		t.Error("expected 5")
-	}
-	if MaxInt(3, 5) != 5 {
-		t.Error("expected 5")
-	}
-	if MaxInt(5, 5) != 5 {
-		t.Error("expected 5")
-	}
-}
