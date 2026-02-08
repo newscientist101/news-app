@@ -190,12 +190,14 @@ Job creation form does client-side validation but error messages are basic `aler
 
 **Resolution:** Replaced all alert() calls with a toast notification system. Toasts slide in from the right, auto-dismiss, and show success/error/info variants with appropriate styling.
 
-### 19. Static File Caching Headers
+### 19. Static File Caching Headers ✅ COMPLETED
 **Issue: Performance**
 
 No cache headers on static files.
 
 **Recommendation:** Add `Cache-Control` headers for CSS/JS files.
+
+**Resolution:** Added cacheControl middleware that sets `Cache-Control: public, max-age=86400` (1 day) on all static files.
 
 ### 20. Runs Page Could Show More Details
 **Issue: UX**
