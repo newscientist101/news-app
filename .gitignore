@@ -1,3 +1,4 @@
 articles/
 db.sqlite3*
 /news-app
+TROUBLESHOOTING_SUMMARY.md
