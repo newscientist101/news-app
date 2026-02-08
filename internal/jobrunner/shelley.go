@@ -59,8 +59,8 @@ func (c *ShelleyClient) CreateConversationAs(ctx context.Context, userID, prompt
 	}
 	defer resp.Body.Close()
 
-	// Accept both 200 OK and 201 Created/Accepted
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+	// Accept 2xx status codes (200 OK, 201 Created, 202 Accepted)
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		body, _ := io.ReadAll(resp.Body)
 		return "", fmt.Errorf("API error %d: %s", resp.StatusCode, string(body))
 	}

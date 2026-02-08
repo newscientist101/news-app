@@ -37,7 +37,7 @@ func SendDiscordNotification(webhookURL, message string) error {
 			lastErr = err
 		} else {
 			resp.Body.Close()
-			if resp.StatusCode == 200 || resp.StatusCode == 204 {
+			if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 				return nil
 			}
 			lastErr = fmt.Errorf("discord webhook failed with status %d", resp.StatusCode)
