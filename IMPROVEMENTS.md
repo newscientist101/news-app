@@ -212,8 +212,10 @@ Runs page shows limited info. Could link to conversation or show more stats.
 
 ## Code Quality
 
-### 21. Inconsistent Error Messages
+### 21. Inconsistent Error Messages ✅ COMPLETED
 Some errors return "Failed to X" while others return "X not found". Standardize.
+
+**Resolution:** Standardized error message format: 400 uses "Invalid request: [reason]", 403 uses "Forbidden: [reason]", 404 uses "[Resource] not found", 429 uses "Rate limit exceeded: [context]", 500 uses "Failed to [action]". Also replaced magic numbers with http.Status* constants.
 
 ### 22. Magic Numbers
 Values like `50` (page limit), `1500` (timeout), `60` (random delay) should be constants.
