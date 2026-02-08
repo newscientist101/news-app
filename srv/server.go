@@ -213,8 +213,9 @@ func (s *Server) Serve(addr string) error {
 	mux.HandleFunc("GET /api/articles/{id}/content", s.handleArticleContent)
 	mux.HandleFunc("GET /api/runs/{id}/log", s.handleRunLog)
 
-	// Static files
-	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(s.StaticDir))))
+	// Static files with caching
+	staticHandler := http.StripPrefix("/static/", http.FileServer(http.Dir(s.StaticDir)))
+	mux.Handle("/static/", cacheControl(staticHandler, 86400)) // 1 day
 
 	slog.Info("starting server", "addr", addr)
 	return http.ListenAndServe(addr, mux)
@@ -238,6 +239,14 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{
 		"status":   status,
 		"database": dbStatus,
+	})
+}
+
+// cacheControl wraps a handler with Cache-Control headers
+func cacheControl(next http.Handler, maxAge int) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", maxAge))
+		next.ServeHTTP(w, r)
 	})
 }
 
