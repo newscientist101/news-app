@@ -30,6 +30,7 @@ Access at your exe.dev VM URL (e.g., `https://your-vm.exe.xyz:8000/`)
 - **Full Content Fetching**: Automatically fetches and stores complete article text
 - **User Preferences**: Custom system prompts, Discord webhook notifications
 - **Multi-user**: Each user has their own jobs and articles (identified by exe.dev user ID)
+- **Auto-Troubleshooting**: Daily automated diagnosis of failed job runs using Shelley AI, with reports saved to `logs/troubleshoot/`
 
 ## Documentation
 
