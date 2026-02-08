@@ -15,15 +15,6 @@ func GetEnv(key, defaultVal string) string {
 	return defaultVal
 }
 
-// BoolToInt64 converts a boolean to an int64 (1 for true, 0 for false).
-// This is useful for SQLite which stores booleans as integers.
-func BoolToInt64(b bool) int64 {
-	if b {
-		return 1
-	}
-	return 0
-}
-
 // CalculateNextRun returns the next scheduled run time based on frequency.
 // If isOneTime is true, returns a time 10 seconds in the future.
 func CalculateNextRun(frequency string, isOneTime bool) time.Time {

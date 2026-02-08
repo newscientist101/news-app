@@ -5,15 +5,6 @@ import (
 	"time"
 )
 
-func TestBoolToInt64(t *testing.T) {
-	if BoolToInt64(true) != 1 {
-		t.Error("expected 1 for true")
-	}
-	if BoolToInt64(false) != 0 {
-		t.Error("expected 0 for false")
-	}
-}
-
 func TestCalculateNextRunFrequencies(t *testing.T) {
 	cases := []struct {
 		freq     string

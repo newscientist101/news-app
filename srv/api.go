@@ -80,7 +80,7 @@ func (s *Server) handleCreateJob(w http.ResponseWriter, r *http.Request) {
 		Sources:   req.Sources,
 		Region:    req.Region,
 		Frequency: req.Frequency,
-		IsOneTime: util.BoolToInt64(req.IsOneTime),
+		IsOneTime: boolToInt64(req.IsOneTime),
 		NextRunAt: &nextRun,
 	})
 	if err != nil {
@@ -125,7 +125,7 @@ func (s *Server) handleUpdateJob(w http.ResponseWriter, r *http.Request) {
 		Sources:   req.Sources,
 		Region:    req.Region,
 		Frequency: req.Frequency,
-		IsActive:  util.BoolToInt64(req.IsActive),
+		IsActive:  boolToInt64(req.IsActive),
 		ID:        id,
 		UserID:    user.ID,
 	})
@@ -341,8 +341,8 @@ func (s *Server) handleUpdatePreferences(w http.ResponseWriter, r *http.Request)
 	err = q.UpdatePreferences(r.Context(), dbgen.UpdatePreferencesParams{
 		SystemPrompt:   req.SystemPrompt,
 		DiscordWebhook: req.DiscordWebhook,
-		NotifySuccess:  util.BoolToInt64(req.NotifySuccess),
-		NotifyFailure:  util.BoolToInt64(req.NotifyFailure),
+		NotifySuccess:  boolToInt64(req.NotifySuccess),
+		NotifyFailure:  boolToInt64(req.NotifyFailure),
 		UserID:         user.ID,
 	})
 	if err != nil {
@@ -483,6 +483,13 @@ func (s *Server) deleteArticlesWithFiles(ctx context.Context, userID int64, ids 
 		return 0, fmt.Errorf("delete articles: %w", err)
 	}
 	return result.RowsAffected()
+}
+
+func boolToInt64(b bool) int64 {
+	if b {
+		return 1
+	}
+	return 0
 }
 
 // buildINClause builds a placeholder string and args for an IN clause.
