@@ -187,6 +187,9 @@ func (s *Server) setUpDatabase(dbPath string) error {
 func (s *Server) Serve(addr string) error {
 	mux := http.NewServeMux()
 
+	// Health check (no auth required)
+	mux.HandleFunc("GET /health", s.handleHealth)
+
 	// Pages
 	mux.HandleFunc("GET /{$}", s.handleDashboard)
 	mux.HandleFunc("GET /jobs", s.handleJobsList)
@@ -215,6 +218,27 @@ func (s *Server) Serve(addr string) error {
 
 	slog.Info("starting server", "addr", addr)
 	return http.ListenAndServe(addr, mux)
+}
+
+// handleHealth returns service health status
+func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
+	status := "ok"
+	dbStatus := "ok"
+	httpCode := http.StatusOK
+
+	// Check database connectivity
+	if err := s.DB.Ping(); err != nil {
+		dbStatus = "error: " + err.Error()
+		status = "degraded"
+		httpCode = http.StatusServiceUnavailable
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(httpCode)
+	json.NewEncoder(w).Encode(map[string]string{
+		"status":   status,
+		"database": dbStatus,
+	})
 }
 
 // csrfProtect wraps a handler with CSRF token validation
