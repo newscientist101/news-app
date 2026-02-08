@@ -9,7 +9,6 @@ import (
 	"html/template"
 	"log/slog"
 	"net/http"
-	"net/http/httptest"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -147,10 +146,6 @@ func (rl *RateLimiter) Allow(key string) bool {
 	
 	rl.requests[key] = append(recent, now)
 	return true
-}
-// HandleRoot is a placeholder for the actual root handler implementation
-func (s *Server) HandleRoot(w *httptest.ResponseRecorder, req *http.Request) {
-	panic("unimplemented")
 }
 
 func New(dbPath, hostname string) (*Server, error) {
@@ -338,10 +333,9 @@ func (s *Server) getOrCreateUser(r *http.Request) (*dbgen.User, error) {
 		return nil, fmt.Errorf("not authenticated")
 	}
 
-	q := dbgen.New(s.DB)
-	user, err := q.GetUserByExeID(r.Context(), exeUserID)
+	user, err := s.Queries.GetUserByExeID(r.Context(), exeUserID)
 	if err == sql.ErrNoRows {
-		user, err = q.CreateUser(r.Context(), dbgen.CreateUserParams{
+		user, err = s.Queries.CreateUser(r.Context(), dbgen.CreateUserParams{
 			ExeUserID: exeUserID,
 			Email:     email,
 		})
@@ -349,7 +343,7 @@ func (s *Server) getOrCreateUser(r *http.Request) (*dbgen.User, error) {
 			return nil, fmt.Errorf("create user: %w", err)
 		}
 		// Create default preferences
-		_, err = q.CreatePreferences(r.Context(), user.ID)
+		_, err = s.Queries.CreatePreferences(r.Context(), user.ID)
 		if err != nil {
 			slog.Warn("create preferences", "error", err)
 		}

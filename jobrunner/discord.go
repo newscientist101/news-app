@@ -22,6 +22,7 @@ func SendDiscordNotification(webhookURL, message string) error {
 	payload := map[string]string{"content": message}
 	jsonPayload, _ := json.Marshal(payload)
 
+	var lastErr error
 	retryDelay := discordRetryDelay
 
 	for attempt := 1; attempt <= discordMaxRetries; attempt++ {
@@ -33,34 +34,20 @@ func SendDiscordNotification(webhookURL, message string) error {
 
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
-			if attempt < discordMaxRetries {
-				time.Sleep(retryDelay)
-				retryDelay *= 2
-				continue
+			lastErr = err
+		} else {
+			resp.Body.Close()
+			if resp.StatusCode == 200 || resp.StatusCode == 204 {
+				return nil
 			}
-			return err
-		}
-		resp.Body.Close()
-
-		if resp.StatusCode == 200 || resp.StatusCode == 204 {
-			return nil
-		}
-
-		// Rate limited - wait longer
-		if resp.StatusCode == 429 {
-			time.Sleep(retryDelay)
-			retryDelay *= 2
-			continue
+			lastErr = fmt.Errorf("discord webhook failed with status %d", resp.StatusCode)
 		}
 
 		if attempt < discordMaxRetries {
 			time.Sleep(retryDelay)
 			retryDelay *= 2
-			continue
 		}
-
-		return fmt.Errorf("discord webhook failed with status %d", resp.StatusCode)
 	}
 
-	return nil
+	return lastErr
 }

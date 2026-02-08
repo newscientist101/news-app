@@ -26,6 +26,11 @@ func NewShelleyClient(baseURL string) *ShelleyClient {
 	}
 }
 
+// jobUserID returns the exe.dev user ID header value for a job.
+func jobUserID(jobID int64) string {
+	return fmt.Sprintf("news-job-%d", jobID)
+}
+
 // CreateConversation creates a new conversation with the given prompt.
 func (c *ShelleyClient) CreateConversation(ctx context.Context, jobID int64, prompt string) (string, error) {
 	reqBody := map[string]string{
@@ -40,7 +45,7 @@ func (c *ShelleyClient) CreateConversation(ctx context.Context, jobID int64, pro
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Exedev-Userid", fmt.Sprintf("news-job-%d", jobID))
+	req.Header.Set("X-Exedev-Userid", jobUserID(jobID))
 	req.Header.Set("X-Shelley-Request", "1")
 
 	resp, err := c.httpClient.Do(req)
@@ -127,7 +132,7 @@ func (c *ShelleyClient) GetConversation(ctx context.Context, jobID int64, convID
 		return nil, err
 	}
 
-	req.Header.Set("X-Exedev-Userid", fmt.Sprintf("news-job-%d", jobID))
+	req.Header.Set("X-Exedev-Userid", jobUserID(jobID))
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -154,7 +159,7 @@ func (c *ShelleyClient) DeleteConversation(ctx context.Context, jobID int64, con
 		return err
 	}
 
-	req.Header.Set("X-Exedev-Userid", fmt.Sprintf("news-job-%d", jobID))
+	req.Header.Set("X-Exedev-Userid", jobUserID(jobID))
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
@@ -172,7 +177,7 @@ func (c *ShelleyClient) ArchiveConversation(ctx context.Context, jobID int64, co
 		return err
 	}
 
-	req.Header.Set("X-Exedev-Userid", fmt.Sprintf("news-job-%d", jobID))
+	req.Header.Set("X-Exedev-Userid", jobUserID(jobID))
 	req.Header.Set("X-Shelley-Request", "1")
 
 	resp, err := c.httpClient.Do(req)
@@ -191,7 +196,7 @@ func (c *ShelleyClient) ListSubagents(ctx context.Context, jobID int64, parentCo
 		return nil, err
 	}
 
-	req.Header.Set("X-Exedev-Userid", fmt.Sprintf("news-job-%d", jobID))
+	req.Header.Set("X-Exedev-Userid", jobUserID(jobID))
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {

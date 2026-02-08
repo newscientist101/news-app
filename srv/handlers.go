@@ -144,12 +144,11 @@ func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	q := s.Queries
-	jobs, err := q.ListJobsByUser(r.Context(), user.ID)
+	jobs, err := s.Queries.ListJobsByUser(r.Context(), user.ID)
 	if err != nil {
 		slog.Error("failed to list jobs", "error", err, "user_id", user.ID)
 	}
-	count, err := q.CountArticlesByUser(r.Context(), user.ID)
+	count, err := s.Queries.CountArticlesByUser(r.Context(), user.ID)
 	if err != nil {
 		slog.Error("failed to count articles", "error", err, "user_id", user.ID)
 	}
@@ -171,8 +170,7 @@ func (s *Server) handleJobsList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	q := s.Queries
-	jobs, err := q.ListJobsByUser(r.Context(), user.ID)
+	jobs, err := s.Queries.ListJobsByUser(r.Context(), user.ID)
 	if err != nil {
 		slog.Error("failed to list jobs", "error", err, "user_id", user.ID)
 	}
@@ -212,14 +210,13 @@ func (s *Server) handleJobDetail(w http.ResponseWriter, r *http.Request) {
 	limit := int64(DefaultPageLimit)
 	offset := int64((page - 1)) * limit
 	
-	q := s.Queries
-	job, err := q.GetJob(r.Context(), dbgen.GetJobParams{ID: id, UserID: user.ID})
+	job, err := s.Queries.GetJob(r.Context(), dbgen.GetJobParams{ID: id, UserID: user.ID})
 	if err != nil {
 		http.Error(w, "Job not found", 404)
 		return
 	}
 	
-	articles, err := q.ListArticlesByJobPaginated(r.Context(), dbgen.ListArticlesByJobPaginatedParams{
+	articles, err := s.Queries.ListArticlesByJobPaginated(r.Context(), dbgen.ListArticlesByJobPaginatedParams{
 		JobID:  job.ID,
 		UserID: user.ID,
 		Limit:  limit,
@@ -229,7 +226,7 @@ func (s *Server) handleJobDetail(w http.ResponseWriter, r *http.Request) {
 		slog.Error("failed to list articles for job", "error", err, "job_id", job.ID)
 	}
 	
-	count, err := q.CountArticlesByJob(r.Context(), dbgen.CountArticlesByJobParams{
+	count, err := s.Queries.CountArticlesByJob(r.Context(), dbgen.CountArticlesByJobParams{
 		JobID:  job.ID,
 		UserID: user.ID,
 	})
@@ -253,8 +250,7 @@ func (s *Server) handleJobEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	q := s.Queries
-	job, err := q.GetJob(r.Context(), dbgen.GetJobParams{ID: id, UserID: user.ID})
+	job, err := s.Queries.GetJob(r.Context(), dbgen.GetJobParams{ID: id, UserID: user.ID})
 	if err != nil {
 		http.Error(w, "Job not found", 404)
 		return
@@ -364,8 +360,7 @@ func (s *Server) handleArticlesList(w http.ResponseWriter, r *http.Request) {
 	articles, count := s.queryArticles(r, user.ID, f)
 	
 	// Get jobs list for the filter dropdown
-	q := s.Queries
-	jobs, _ := q.ListJobsByUser(r.Context(), user.ID)
+	jobs, _ := s.Queries.ListJobsByUser(r.Context(), user.ID)
 	
 	data := PageData{
 		User:        user,
@@ -395,8 +390,7 @@ func (s *Server) handleArticleDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	q := s.Queries
-	article, err := q.GetArticle(r.Context(), dbgen.GetArticleParams{ID: id, UserID: user.ID})
+	article, err := s.Queries.GetArticle(r.Context(), dbgen.GetArticleParams{ID: id, UserID: user.ID})
 	if err != nil {
 		http.Error(w, "Article not found", 404)
 		return
@@ -413,10 +407,9 @@ func (s *Server) handlePreferences(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	q := s.Queries
-	prefs, err := q.GetPreferences(r.Context(), user.ID)
+	prefs, err := s.Queries.GetPreferences(r.Context(), user.ID)
 	if err == sql.ErrNoRows {
-		prefs, _ = q.CreatePreferences(r.Context(), user.ID)
+		prefs, _ = s.Queries.CreatePreferences(r.Context(), user.ID)
 	}
 	
 	data := PageData{User: user, Preferences: &prefs, CSRFToken: s.getCSRFToken(r)}
@@ -430,12 +423,11 @@ func (s *Server) handleRuns(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	q := s.Queries
-	runningRuns, err := q.ListRunningJobRuns(r.Context(), user.ID)
+	runningRuns, err := s.Queries.ListRunningJobRuns(r.Context(), user.ID)
 	if err != nil {
 		slog.Error("failed to list running job runs", "error", err, "user_id", user.ID)
 	}
-	recentRuns, err := q.ListRecentJobRuns(r.Context(), dbgen.ListRecentJobRunsParams{
+	recentRuns, err := s.Queries.ListRecentJobRuns(r.Context(), dbgen.ListRecentJobRunsParams{
 		UserID: user.ID,
 		Limit:  DefaultPageLimit,
 	})

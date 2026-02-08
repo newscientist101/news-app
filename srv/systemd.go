@@ -135,6 +135,6 @@ func writeFileWithSudo(path, content string) error {
 }
 
 func runJobDirectly(db *sql.DB, jobID int64) {
-	cmd := exec.Command(jobRunnerPath, fmt.Sprintf("%d", jobID))
+	cmd := exec.Command(jobRunnerPath, jobRunnerArgs, fmt.Sprintf("%d", jobID))
 	cmd.Run()
 }

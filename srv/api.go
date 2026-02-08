@@ -70,8 +70,7 @@ func (s *Server) handleCreateJob(w http.ResponseWriter, r *http.Request) {
 	
 	nextRun := util.CalculateNextRun(req.Frequency, req.IsOneTime)
 	
-	q := s.Queries
-	job, err := q.CreateJob(r.Context(), dbgen.CreateJobParams{
+	job, err := s.Queries.CreateJob(r.Context(), dbgen.CreateJobParams{
 		UserID:    user.ID,
 		Name:      req.Name,
 		Prompt:    req.Prompt,
@@ -114,8 +113,7 @@ func (s *Server) handleUpdateJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	q := s.Queries
-	err = q.UpdateJob(r.Context(), dbgen.UpdateJobParams{
+	err = s.Queries.UpdateJob(r.Context(), dbgen.UpdateJobParams{
 		Name:      req.Name,
 		Prompt:    req.Prompt,
 		Keywords:  req.Keywords,
@@ -133,7 +131,7 @@ func (s *Server) handleUpdateJob(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	// Update systemd timer
-	job, _ := q.GetJob(r.Context(), dbgen.GetJobParams{ID: id, UserID: user.ID})
+	job, _ := s.Queries.GetJob(r.Context(), dbgen.GetJobParams{ID: id, UserID: user.ID})
 	updateSystemdTimer(job)
 	
 	slog.Info("job updated", "job_id", id, "user_id", user.ID)
@@ -155,8 +153,7 @@ func (s *Server) handleDeleteJob(w http.ResponseWriter, r *http.Request) {
 	// Remove systemd timer first
 	removeSystemdTimer(id)
 	
-	q := s.Queries
-	err = q.DeleteJob(r.Context(), dbgen.DeleteJobParams{ID: id, UserID: user.ID})
+	err = s.Queries.DeleteJob(r.Context(), dbgen.DeleteJobParams{ID: id, UserID: user.ID})
 	if err != nil {
 		slog.Error("failed to delete job", "job_id", id, "user_id", user.ID, "error", err)
 		s.jsonError(w, "Failed to delete job", http.StatusInternalServerError)
@@ -186,8 +183,7 @@ func (s *Server) handleRunJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	q := s.Queries
-	job, err := q.GetJob(r.Context(), dbgen.GetJobParams{ID: id, UserID: user.ID})
+	job, err := s.Queries.GetJob(r.Context(), dbgen.GetJobParams{ID: id, UserID: user.ID})
 	if err != nil {
 		s.jsonError(w, "Job not found", 404)
 		return
@@ -222,8 +218,7 @@ func (s *Server) handleStopJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	q := s.Queries
-	job, err := q.GetJob(r.Context(), dbgen.GetJobParams{ID: id, UserID: user.ID})
+	job, err := s.Queries.GetJob(r.Context(), dbgen.GetJobParams{ID: id, UserID: user.ID})
 	if err != nil {
 		s.jsonError(w, "Job not found", 404)
 		return
@@ -241,7 +236,7 @@ func (s *Server) handleStopJob(w http.ResponseWriter, r *http.Request) {
 	
 	// Update job status to stopped/failed, preserving next_run_at
 	now := time.Now()
-	q.UpdateJobStatus(r.Context(), dbgen.UpdateJobStatusParams{
+	s.Queries.UpdateJobStatus(r.Context(), dbgen.UpdateJobStatusParams{
 		Status:    util.StatusStopped,
 		LastRunAt: &now,
 		NextRunAt: job.NextRunAt,
@@ -264,10 +259,8 @@ func (s *Server) handleCancelRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	q := s.Queries
-	
 	// Verify the run belongs to this user
-	run, err := q.GetJobRun(r.Context(), dbgen.GetJobRunParams{ID: id, UserID: user.ID})
+	run, err := s.Queries.GetJobRun(r.Context(), dbgen.GetJobRunParams{ID: id, UserID: user.ID})
 	if err != nil {
 		s.jsonError(w, "Run not found", 404)
 		return
@@ -284,17 +277,17 @@ func (s *Server) handleCancelRun(w http.ResponseWriter, r *http.Request) {
 	cmd.Run() // Ignore errors - service may not be running
 	
 	// Mark the run as cancelled
-	if err := q.CancelJobRun(r.Context(), id); err != nil {
+	if err := s.Queries.CancelJobRun(r.Context(), id); err != nil {
 		slog.Error("failed to cancel run", "run_id", id, "user_id", user.ID, "error", err)
 		s.jsonError(w, "Failed to cancel run", http.StatusInternalServerError)
 		return
 	}
 	
 	// Also update job status if it's still marked as running, preserving next_run_at
-	job, _ := q.GetJobByID(r.Context(), run.JobID)
+	job, _ := s.Queries.GetJobByID(r.Context(), run.JobID)
 	if job.Status == util.StatusRunning {
 		now := time.Now()
-		q.UpdateJobStatus(r.Context(), dbgen.UpdateJobStatusParams{
+		s.Queries.UpdateJobStatus(r.Context(), dbgen.UpdateJobStatusParams{
 			Status:    util.StatusCancelled,
 			LastRunAt: &now,
 			NextRunAt: job.NextRunAt,
@@ -319,15 +312,13 @@ func (s *Server) handleUpdatePreferences(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	
-	q := s.Queries
-	
 	// Ensure preferences exist
-	_, err = q.GetPreferences(r.Context(), user.ID)
+	_, err = s.Queries.GetPreferences(r.Context(), user.ID)
 	if err == sql.ErrNoRows {
-		q.CreatePreferences(r.Context(), user.ID)
+		s.Queries.CreatePreferences(r.Context(), user.ID)
 	}
 	
-	err = q.UpdatePreferences(r.Context(), dbgen.UpdatePreferencesParams{
+	err = s.Queries.UpdatePreferences(r.Context(), dbgen.UpdatePreferencesParams{
 		SystemPrompt:   req.SystemPrompt,
 		DiscordWebhook: req.DiscordWebhook,
 		NotifySuccess:  boolToInt64(req.NotifySuccess),
@@ -354,8 +345,7 @@ func (s *Server) handleArticleContent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	q := s.Queries
-	article, err := q.GetArticle(r.Context(), dbgen.GetArticleParams{ID: id, UserID: user.ID})
+	article, err := s.Queries.GetArticle(r.Context(), dbgen.GetArticleParams{ID: id, UserID: user.ID})
 	if err != nil {
 		http.Error(w, "Article not found", 404)
 		return
@@ -382,8 +372,7 @@ func (s *Server) handleRunLog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	q := s.Queries
-	logPath, err := q.GetJobRunLogPath(r.Context(), dbgen.GetJobRunLogPathParams{ID: id, UserID: user.ID})
+	logPath, err := s.Queries.GetJobRunLogPath(r.Context(), dbgen.GetJobRunLogPathParams{ID: id, UserID: user.ID})
 	if err != nil {
 		http.Error(w, "Run not found", 404)
 		return
