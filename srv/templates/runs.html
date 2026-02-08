@@ -12,7 +12,7 @@
             <th>Job</th>
             <th>Started</th>
             <th>Duration</th>
-            <th>Articles</th>
+            <th>Progress</th>
             <th>Actions</th>
         </tr>
     </thead>
@@ -23,7 +23,14 @@
             <td><a href="/jobs/{{.JobID}}">{{.JobName}}</a></td>
             <td>{{.StartedAt.Format "Jan 02 15:04:05"}}</td>
             <td class="run-duration" data-started="{{.StartedAt.Unix}}">calculating...</td>
-            <td>{{if .ArticlesSaved}}{{.ArticlesSaved}}{{else}}0{{end}}</td>
+            <td class="run-results">
+                {{if or .ArticlesSaved .DuplicatesSkipped}}
+                    <strong>{{if .ArticlesSaved}}{{.ArticlesSaved}}{{else}}0{{end}}</strong> saved
+                    {{if .DuplicatesSkipped}}<span class="text-muted"> / {{.DuplicatesSkipped}} dupes</span>{{end}}
+                {{else}}
+                    <span class="text-muted">waiting...</span>
+                {{end}}
+            </td>
             <td>
                 {{if .LogPath}}
                 <button class="btn btn-sm" onclick="viewLog({{.ID}})" title="View live log">📄 Log</button>
@@ -46,8 +53,7 @@
             <th>Run #</th>
             <th>Job</th>
             <th>Status</th>
-            <th>Articles</th>
-            <th>Duplicates</th>
+            <th>Results</th>
             <th>Started</th>
             <th>Completed</th>
             <th>Duration</th>
@@ -61,8 +67,18 @@
             <td>{{.ID}}</td>
             <td><a href="/jobs/{{.JobID}}">{{.JobName}}</a></td>
             <td><span class="status status-{{.Status}}">{{.Status}}</span></td>
-            <td>{{if .ArticlesSaved}}{{.ArticlesSaved}}{{else}}0{{end}}</td>
-            <td>{{if .DuplicatesSkipped}}{{.DuplicatesSkipped}}{{else}}0{{end}}</td>
+            <td class="run-results">
+                {{if or .ArticlesSaved .DuplicatesSkipped}}
+                    <span title="New articles saved">
+                        <strong>{{if .ArticlesSaved}}{{.ArticlesSaved}}{{else}}0{{end}}</strong> saved
+                    </span>
+                    {{if .DuplicatesSkipped}}
+                        <span class="text-muted" title="Duplicate articles skipped"> / {{.DuplicatesSkipped}} dupes</span>
+                    {{end}}
+                {{else}}
+                    <span class="text-muted">-</span>
+                {{end}}
+            </td>
             <td>{{.StartedAt.Format "Jan 02 15:04:05"}}</td>
             <td>{{if .CompletedAt}}{{.CompletedAt.Format "Jan 02 15:04:05"}}{{else}}-{{end}}</td>
             <td>
