@@ -50,6 +50,8 @@ news-app/
 │   │   ├── runner.go    # Main job logic
 │   │   ├── shelley.go   # Shelley API client
 │   │   ├── content.go   # Article content extraction
+│   │   ├── cleanup.go   # Conversation cleanup
+│   │   ├── troubleshoot.go # Auto-diagnosis
 │   │   └── discord.go   # Discord notifications
 │   ├── db/
 │   │   ├── db.go        # Database setup
@@ -62,7 +64,9 @@ news-app/
 │   └── *.service/*.timer
 ├── docs/                # Documentation
 ├── articles/            # Stored article content
-└── logs/                # Job run logs
+└── logs/
+    ├── runs/            # Job run logs
+    └── troubleshoot/    # Troubleshooting reports
 ```
 
 ## Systemd Services
