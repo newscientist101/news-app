@@ -54,12 +54,6 @@ func CalculateNextRun(frequency string, isOneTime bool) time.Time {
 	if isOneTime {
 		return now.Add(10 * time.Second)
 	}
-	return CalculateNextRunFromFrequency(frequency)
-}
-
-// CalculateNextRunFromFrequency returns the next run time based on frequency only.
-func CalculateNextRunFromFrequency(frequency string) time.Time {
-	now := time.Now()
 	switch frequency {
 	case "hourly":
 		return now.Add(1 * time.Hour)

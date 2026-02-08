@@ -477,7 +477,7 @@ func (r *Runner) finalizeRun(ctx context.Context, job dbgen.Job, runID int64, re
 	// Calculate next run time
 	var nextRunAt *time.Time
 	if job.IsOneTime == 0 && result.Error == nil {
-		next := util.CalculateNextRunFromFrequency(job.Frequency)
+		next := util.CalculateNextRun(job.Frequency, false)
 		nextRunAt = &next
 	}
 

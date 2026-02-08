@@ -14,7 +14,7 @@ func TestBoolToInt64(t *testing.T) {
 	}
 }
 
-func TestCalculateNextRunFromFrequency(t *testing.T) {
+func TestCalculateNextRunFrequencies(t *testing.T) {
 	cases := []struct {
 		freq     string
 		expected time.Duration
@@ -28,7 +28,7 @@ func TestCalculateNextRunFromFrequency(t *testing.T) {
 
 	for _, tc := range cases {
 		now := time.Now()
-		next := CalculateNextRunFromFrequency(tc.freq)
+		next := CalculateNextRun(tc.freq, false)
 		diff := next.Sub(now)
 		// Allow 1 second tolerance
 		if diff < tc.expected-time.Second || diff > tc.expected+time.Second {
