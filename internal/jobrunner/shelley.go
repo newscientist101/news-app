@@ -125,10 +125,20 @@ func (c *Conversation) IsComplete() bool {
 func (c *Conversation) GetLastAgentText() string {
 	for i := len(c.Messages) - 1; i >= 0; i-- {
 		if c.Messages[i].Type == "agent" {
+			// LLMData may be a JSON string or an object
+			var llmDataStr string
 			var data LLMData
-			if err := json.Unmarshal(c.Messages[i].LLMData, &data); err != nil {
+			
+			// Try parsing as string first (API returns JSON-encoded string)
+			if err := json.Unmarshal(c.Messages[i].LLMData, &llmDataStr); err == nil {
+				if err := json.Unmarshal([]byte(llmDataStr), &data); err != nil {
+					continue
+				}
+			} else if err := json.Unmarshal(c.Messages[i].LLMData, &data); err != nil {
+				// Try parsing directly as object
 				continue
 			}
+			
 			for _, block := range data.Content {
 				if block.Type == 2 && block.Text != "" {
 					return block.Text
