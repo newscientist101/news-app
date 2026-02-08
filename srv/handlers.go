@@ -13,16 +13,26 @@ import (
 	"srv.exe.dev/db/dbgen"
 )
 
+// searchTermsRE matches quoted strings or non-space sequences for search parsing.
+var searchTermsRE = regexp.MustCompile(`"([^"]+)"|'([^']+)'|(\S+)`)
+
 func redirectToLogin(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/__exe.dev/login?redirect="+r.URL.Path, http.StatusFound)
+}
+
+// parsePage extracts page number from query params, returns page, limit, offset.
+func parsePage(r *http.Request) (page int, limit, offset int64) {
+	page, _ = strconv.Atoi(r.URL.Query().Get("page"))
+	page = max(page, 1)
+	limit = int64(DefaultPageLimit)
+	offset = int64(page-1) * limit
+	return
 }
 
 // parseSearchTerms splits a search query into terms, keeping quoted phrases together
 func parseSearchTerms(query string) []string {
 	var terms []string
-	// Match quoted strings or non-space sequences
-	re := regexp.MustCompile(`"([^"]+)"|'([^']+)'|(\S+)`)
-	matches := re.FindAllStringSubmatch(query, -1)
+	matches := searchTermsRE.FindAllStringSubmatch(query, -1)
 	for _, match := range matches {
 		if match[1] != "" {
 			terms = append(terms, match[1]) // double-quoted
@@ -53,20 +63,19 @@ type articlesFilter struct {
 // parseArticlesFilters extracts filter parameters from the request.
 func parseArticlesFilters(r *http.Request) articlesFilter {
 	q := r.URL.Query()
-
-	page, _ := strconv.Atoi(q.Get("page"))
+	page, limit, offset := parsePage(r)
 	jobFilter, _ := strconv.ParseInt(q.Get("job"), 10, 64)
 
 	f := articlesFilter{
-		Page:        max(page, 1),
-		Limit:       int64(DefaultPageLimit),
+		Page:        page,
+		Limit:       limit,
+		Offset:      offset,
 		SearchQuery: q.Get("q"),
 		JobFilter:   jobFilter,
 		DateFilter:  q.Get("filter"),
 		DateFrom:    q.Get("from"),
 		DateTo:      q.Get("to"),
 	}
-	f.Offset = int64(f.Page-1) * f.Limit
 
 	f.parseDateFilters()
 	return f
@@ -202,13 +211,7 @@ func (s *Server) handleJobDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	// Pagination
-	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
-	if page < 1 {
-		page = 1
-	}
-	limit := int64(DefaultPageLimit)
-	offset := int64((page - 1)) * limit
+	page, limit, offset := parsePage(r)
 	
 	job, err := s.Queries.GetJob(r.Context(), dbgen.GetJobParams{ID: id, UserID: user.ID})
 	if err != nil {

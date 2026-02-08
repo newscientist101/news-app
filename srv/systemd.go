@@ -1,7 +1,6 @@
 package srv
 
 import (
-	"database/sql"
 	"fmt"
 	"os"
 	"os/exec"
@@ -134,7 +133,7 @@ func writeFileWithSudo(path, content string) error {
 	return cmd.Run()
 }
 
-func runJobDirectly(db *sql.DB, jobID int64) {
+func runJobDirectly(jobID int64) {
 	cmd := exec.Command(jobRunnerPath, jobRunnerArgs, fmt.Sprintf("%d", jobID))
 	cmd.Run()
 }

@@ -199,7 +199,7 @@ func (s *Server) handleRunJob(w http.ResponseWriter, r *http.Request) {
 	cmd := exec.Command("sudo", "systemctl", "start", serviceName+".service")
 	if err := cmd.Run(); err != nil {
 		slog.Warn("systemd start failed, running directly", "job_id", job.ID, "error", err)
-		go runJobDirectly(s.DB, job.ID)
+		go runJobDirectly(job.ID)
 	}
 	
 	slog.Info("job started", "job_id", job.ID, "user_id", user.ID, "name", job.Name)
@@ -356,7 +356,6 @@ func (s *Server) handleArticleContent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	http.ServeFile(w, r, article.ContentPath)
 }
 
@@ -383,13 +382,6 @@ func (s *Server) handleRunLog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	// Check if file exists
-	if _, err := os.Stat(logPath); os.IsNotExist(err) {
-		http.Error(w, "Log file not found", 404)
-		return
-	}
-	
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	http.ServeFile(w, r, logPath)
 }
 
