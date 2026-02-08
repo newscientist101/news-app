@@ -219,19 +219,17 @@ func (c *ShelleyClient) ListSubagents(ctx context.Context, jobID int64, parentCo
 	}
 	defer resp.Body.Close()
 
-	var result struct {
-		Conversations []struct {
-			ConversationID       string `json:"conversation_id"`
-			ParentConversationID string `json:"parent_conversation_id"`
-		} `json:"conversations"`
+	var conversations []struct {
+		ConversationID       string `json:"conversation_id"`
+		ParentConversationID string `json:"parent_conversation_id"`
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&conversations); err != nil {
 		return nil, err
 	}
 
 	var subagents []string
-	for _, conv := range result.Conversations {
+	for _, conv := range conversations {
 		if conv.ParentConversationID == parentConvID {
 			subagents = append(subagents, conv.ConversationID)
 		}

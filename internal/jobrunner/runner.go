@@ -263,8 +263,9 @@ func (r *Runner) executeJob(ctx context.Context, job dbgen.Job, prefs dbgen.Pref
 	responseText := conv.GetLastAgentText()
 	articles, err := ExtractArticlesJSON(responseText)
 	if err != nil {
-		r.logger.Warn("extract articles JSON", "error", err)
-		// Continue with empty articles - not a fatal error
+		r.logger.Error("extract articles JSON", "error", err)
+		result.Error = fmt.Errorf("failed to extract articles: %w", err)
+		return result
 	}
 
 	// Fetch content and save articles
