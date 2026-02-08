@@ -199,12 +199,14 @@ No cache headers on static files.
 
 **Resolution:** Added cacheControl middleware that sets `Cache-Control: public, max-age=86400` (1 day) on all static files.
 
-### 20. Runs Page Could Show More Details
+### 20. Runs Page Could Show More Details ✅ COMPLETED
 **Issue: UX**
 
 Runs page shows limited info. Could link to conversation or show more stats.
 
 **Recommendation:** Add link to view raw agent output, show total articles attempted vs saved.
+
+**Resolution:** Improved results display to show "X saved / Y dupes" format with tooltips. Added green highlighting for saved count and better styling for both in-progress and recent runs tables.
 
 ---
 
