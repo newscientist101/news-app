@@ -185,7 +185,7 @@ SELECT jr.id, jr.job_id, jr.status, jr.error_message, jr.started_at, jr.complete
 FROM job_runs jr
 JOIN jobs j ON jr.job_id = j.id
 WHERE j.user_id = ?
-ORDER BY jr.started_at DESC
+ORDER BY jr.id DESC
 LIMIT ?
 `
 

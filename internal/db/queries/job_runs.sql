@@ -31,7 +31,7 @@ SELECT jr.*, j.name as job_name, j.user_id as job_user_id
 FROM job_runs jr
 JOIN jobs j ON jr.job_id = j.id
 WHERE j.user_id = ?
-ORDER BY jr.started_at DESC
+ORDER BY jr.id DESC
 LIMIT ?;
 
 -- name: GetJobRun :one
