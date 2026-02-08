@@ -87,10 +87,10 @@ func (s *Server) handleCreateJob(w http.ResponseWriter, r *http.Request) {
 	
 	// Create systemd timer
 	if err := createSystemdTimer(job); err != nil {
-		// Log but don't fail - job is created
-		fmt.Fprintf(os.Stderr, "Failed to create systemd timer: %v\n", err)
+		slog.Warn("failed to create systemd timer", "job_id", job.ID, "error", err)
 	}
 	
+	slog.Info("job created", "job_id", job.ID, "user_id", user.ID, "name", job.Name)
 	s.jsonOK(w, job)
 }
 
@@ -127,6 +127,7 @@ func (s *Server) handleUpdateJob(w http.ResponseWriter, r *http.Request) {
 		UserID:    user.ID,
 	})
 	if err != nil {
+		slog.Error("failed to update job", "job_id", id, "user_id", user.ID, "error", err)
 		s.jsonError(w, "Failed to update job", http.StatusInternalServerError)
 		return
 	}
@@ -135,6 +136,7 @@ func (s *Server) handleUpdateJob(w http.ResponseWriter, r *http.Request) {
 	job, _ := q.GetJob(r.Context(), dbgen.GetJobParams{ID: id, UserID: user.ID})
 	updateSystemdTimer(job)
 	
+	slog.Info("job updated", "job_id", id, "user_id", user.ID)
 	s.jsonOK(w, map[string]string{"status": "ok"})
 }
 
@@ -158,10 +160,12 @@ func (s *Server) handleDeleteJob(w http.ResponseWriter, r *http.Request) {
 	q := dbgen.New(s.DB)
 	err = q.DeleteJob(r.Context(), dbgen.DeleteJobParams{ID: id, UserID: user.ID})
 	if err != nil {
+		slog.Error("failed to delete job", "job_id", id, "user_id", user.ID, "error", err)
 		s.jsonError(w, "Failed to delete job", http.StatusInternalServerError)
 		return
 	}
 	
+	slog.Info("job deleted", "job_id", id, "user_id", user.ID)
 	s.jsonOK(w, map[string]string{"status": "ok"})
 }
 
@@ -202,10 +206,11 @@ func (s *Server) handleRunJob(w http.ResponseWriter, r *http.Request) {
 	serviceName := fmt.Sprintf("news-job-%d", job.ID)
 	cmd := exec.Command("sudo", "systemctl", "start", serviceName+".service")
 	if err := cmd.Run(); err != nil {
-		// Try running directly if systemd fails
+		slog.Warn("systemd start failed, running directly", "job_id", job.ID, "error", err)
 		go runJobDirectly(s.DB, job.ID)
 	}
 	
+	slog.Info("job started", "job_id", job.ID, "user_id", user.ID, "name", job.Name)
 	s.jsonOK(w, map[string]string{"status": "started"})
 }
 
@@ -249,6 +254,7 @@ func (s *Server) handleStopJob(w http.ResponseWriter, r *http.Request) {
 		ID:        job.ID,
 	})
 	
+	slog.Info("job stopped", "job_id", job.ID, "user_id", user.ID)
 	s.jsonOK(w, map[string]string{"status": "stopped"})
 }
 
@@ -287,6 +293,7 @@ func (s *Server) handleCancelRun(w http.ResponseWriter, r *http.Request) {
 	
 	// Mark the run as cancelled
 	if err := q.CancelJobRun(r.Context(), id); err != nil {
+		slog.Error("failed to cancel run", "run_id", id, "user_id", user.ID, "error", err)
 		s.jsonError(w, "Failed to cancel run", http.StatusInternalServerError)
 		return
 	}
@@ -303,6 +310,7 @@ func (s *Server) handleCancelRun(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 	
+	slog.Info("run cancelled", "run_id", id, "job_id", run.JobID, "user_id", user.ID)
 	s.jsonOK(w, map[string]string{"status": "cancelled"})
 }
 

@@ -232,7 +232,7 @@ func (s *Server) Serve(addr string) error {
 	mux.Handle("/static/", cacheControl(staticHandler, StaticCacheMaxAge))
 
 	slog.Info("starting server", "addr", addr)
-	return http.ListenAndServe(addr, mux)
+	return http.ListenAndServe(addr, requestLogger(mux))
 }
 
 // handleHealth returns service health status
@@ -261,6 +261,53 @@ func cacheControl(next http.Handler, maxAge int) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", maxAge))
 		next.ServeHTTP(w, r)
+	})
+}
+
+// responseRecorder wraps ResponseWriter to capture status code
+type responseRecorder struct {
+	http.ResponseWriter
+	status int
+}
+
+func (rr *responseRecorder) WriteHeader(code int) {
+	rr.status = code
+	rr.ResponseWriter.WriteHeader(code)
+}
+
+// requestLogger logs HTTP requests with method, path, status, and duration
+func requestLogger(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Skip logging for static files and health checks
+		if strings.HasPrefix(r.URL.Path, "/static/") || r.URL.Path == "/health" {
+			next.ServeHTTP(w, r)
+			return
+		}
+		
+		start := time.Now()
+		userID := r.Header.Get("X-ExeDev-UserID")
+		
+		rr := &responseRecorder{ResponseWriter: w, status: http.StatusOK}
+		next.ServeHTTP(rr, r)
+		
+		duration := time.Since(start)
+		
+		// Log at appropriate level based on status
+		logArgs := []any{
+			"method", r.Method,
+			"path", r.URL.Path,
+			"status", rr.status,
+			"duration", duration.Round(time.Millisecond),
+			"user_id", userID,
+		}
+		
+		if rr.status >= 500 {
+			slog.Error("request failed", logArgs...)
+		} else if rr.status >= 400 {
+			slog.Warn("request error", logArgs...)
+		} else {
+			slog.Info("request", logArgs...)
+		}
 	})
 }
 
