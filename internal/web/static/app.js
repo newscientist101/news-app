@@ -173,20 +173,20 @@ async function submitJobForm(form, method, url, redirectUrl) {
     submitBtn.textContent = method === 'POST' ? 'Creating...' : 'Saving...';
     
     const data = {
-        name: form.name.value,
-        prompt: form.prompt.value,
-        keywords: form.keywords.value,
-        sources: form.sources.value,
-        region: form.region.value,
-        frequency: form.frequency.value,
+        name: form.elements.name.value,
+        prompt: form.elements.prompt.value,
+        keywords: form.elements.keywords.value,
+        sources: form.elements.sources.value,
+        region: form.elements.region.value,
+        frequency: form.elements.frequency.value,
     };
     
     // Add type-specific fields
-    if (form.isOneTime) {
-        data.is_one_time = form.isOneTime.checked;
+    if (form.elements.isOneTime) {
+        data.is_one_time = form.elements.isOneTime.checked;
     }
-    if (form.isActive) {
-        data.is_active = form.isActive.checked;
+    if (form.elements.isActive) {
+        data.is_active = form.elements.isActive.checked;
     }
     
     try {
