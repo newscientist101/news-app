@@ -1,5 +1,7 @@
 # News Agent
 
+*Burning credits for news*
+
 A multi-user web app that retrieves news articles using the Shelley AI agent. Users can create scheduled jobs to search for news on specific topics, and the app fetches full article content for offline reading.
 
 **Designed for [exe.dev](https://exe.dev) VMs** - uses exe.dev authentication headers and the Shelley AI agent.
