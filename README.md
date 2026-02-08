@@ -4,6 +4,8 @@ A multi-user web app that retrieves news articles using the Shelley AI agent. Us
 
 **Designed for [exe.dev](https://exe.dev) VMs** - uses exe.dev authentication headers and the Shelley AI agent.
 
+> ⚠️ **Token Usage Warning**: Each job run uses the Shelley AI agent to search for and retrieve news articles, which consumes API tokens. Recurring jobs (hourly, daily, etc.) will accumulate significant token usage over time. Monitor your usage and adjust job frequency accordingly.
+
 ## Quick Start
 
 ```bash
