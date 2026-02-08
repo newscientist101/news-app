@@ -3,6 +3,66 @@
 // =============================================================================
 
 // -----------------------------------------------------------------------------
+// Toast Notifications
+// -----------------------------------------------------------------------------
+
+function getToastContainer() {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+    }
+    return container;
+}
+
+function showToast(type, title, message, duration = 5000) {
+    const container = getToastContainer();
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    
+    const icons = {
+        success: '✓',
+        error: '✕',
+        info: 'ℹ'
+    };
+    
+    toast.innerHTML = `
+        <span class="toast-icon">${icons[type] || icons.info}</span>
+        <div class="toast-content">
+            <div class="toast-title">${title}</div>
+            ${message ? `<div class="toast-message">${message}</div>` : ''}
+        </div>
+        <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
+    `;
+    
+    container.appendChild(toast);
+    
+    // Auto-remove after duration
+    if (duration > 0) {
+        setTimeout(() => {
+            toast.classList.add('toast-out');
+            setTimeout(() => toast.remove(), 300);
+        }, duration);
+    }
+    
+    return toast;
+}
+
+function showSuccess(title, message) {
+    return showToast('success', title, message);
+}
+
+function showError(title, message) {
+    return showToast('error', title, message, 8000);
+}
+
+function showInfo(title, message) {
+    return showToast('info', title, message);
+}
+
+// -----------------------------------------------------------------------------
 // CSRF Token Helper
 // -----------------------------------------------------------------------------
 
@@ -23,14 +83,14 @@ async function runJob(id) {
     try {
         const res = await fetch(`/api/jobs/${id}/run`, { method: 'POST', headers: getCsrfHeaders() });
         if (res.ok) {
-            alert('Job started! Refresh the page in a moment to see results.');
-            location.reload();
+            showSuccess('Job Started', 'The job is now running. Page will reload shortly.');
+            setTimeout(() => location.reload(), 1500);
         } else {
             const err = await res.json();
-            alert('Error: ' + err.error);
+            showError('Failed to Start Job', err.error);
         }
     } catch (err) {
-        alert('Error: ' + err.message);
+        showError('Network Error', err.message);
     }
 }
 
@@ -39,14 +99,14 @@ async function stopJob(id) {
     try {
         const res = await fetch(`/api/jobs/${id}/stop`, { method: 'POST', headers: getCsrfHeaders() });
         if (res.ok) {
-            alert('Job stopped.');
-            location.reload();
+            showSuccess('Job Stopped', 'The job has been stopped.');
+            setTimeout(() => location.reload(), 1500);
         } else {
             const err = await res.json();
-            alert('Error: ' + err.error);
+            showError('Failed to Stop Job', err.error);
         }
     } catch (err) {
-        alert('Error: ' + err.message);
+        showError('Network Error', err.message);
     }
 }
 
@@ -55,13 +115,14 @@ async function deleteJob(id) {
     try {
         const res = await fetch(`/api/jobs/${id}`, { method: 'DELETE', headers: getCsrfHeaders() });
         if (res.ok) {
-            window.location.href = '/jobs';
+            showSuccess('Job Deleted', 'Redirecting to jobs list...');
+            setTimeout(() => window.location.href = '/jobs', 1500);
         } else {
             const err = await res.json();
-            alert('Error: ' + err.error);
+            showError('Failed to Delete Job', err.error);
         }
     } catch (err) {
-        alert('Error: ' + err.message);
+        showError('Network Error', err.message);
     }
 }
 
@@ -70,13 +131,14 @@ async function cancelRun(id) {
     try {
         const res = await fetch(`/api/runs/${id}/cancel`, { method: 'POST', headers: getCsrfHeaders() });
         if (res.ok) {
-            location.reload();
+            showSuccess('Run Cancelled', 'The run has been cancelled.');
+            setTimeout(() => location.reload(), 1500);
         } else {
             const err = await res.json();
-            alert('Error: ' + err.error);
+            showError('Failed to Cancel Run', err.error);
         }
     } catch (err) {
-        alert('Error: ' + err.message);
+        showError('Network Error', err.message);
     }
 }
 
@@ -141,12 +203,12 @@ async function submitJobForm(form, method, url, redirectUrl) {
             }
         } else {
             const err = await res.json();
-            alert('Error: ' + err.error);
+            showError('Failed to Save', err.error);
             submitBtn.disabled = false;
             submitBtn.textContent = originalText;
         }
     } catch (err) {
-        alert('Error: ' + err.message);
+        showError('Network Error', err.message);
         submitBtn.disabled = false;
         submitBtn.textContent = originalText;
     }
@@ -167,13 +229,13 @@ async function submitPreferencesForm(form) {
             body: JSON.stringify(data)
         });
         if (res.ok) {
-            alert('Preferences saved!');
+            showSuccess('Preferences Saved', 'Your settings have been updated.');
         } else {
             const err = await res.json();
-            alert('Error: ' + err.error);
+            showError('Failed to Save Preferences', err.error);
         }
     } catch (err) {
-        alert('Error: ' + err.message);
+        showError('Network Error', err.message);
     }
 }
 
@@ -185,11 +247,7 @@ function showCreatedMessage() {
     const params = new URLSearchParams(window.location.search);
     const created = params.get('created');
     if (created) {
-        const msg = document.getElementById('successMessage');
-        if (msg) {
-            msg.textContent = 'Job "' + created + '" created successfully!';
-            msg.style.display = 'block';
-        }
+        showSuccess('Job Created', `Job "${created}" created successfully!`);
         history.replaceState(null, '', '/');
     }
 }
