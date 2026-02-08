@@ -6,7 +6,7 @@ A multi-user web app that retrieves news articles using the Shelley AI agent. Us
 
 > ⚠️ **Token Usage Warning**: Each job run uses the Shelley AI agent to search for and retrieve news articles, which consumes API tokens. Recurring jobs (hourly, daily, etc.) will accumulate significant token usage over time. Monitor your usage and adjust job frequency accordingly.
 
-> ⚠️ **Storage Warning**: Job conversations are stored in the Shelley database (`~/.config/shelley/shelley.db`) and can fill up your VM's storage if not cleaned up. The `news-cleanup.timer` service handles this automatically (runs every 48 hours), but you should verify it's running: `systemctl status news-cleanup.timer`. You can also run cleanup manually: `./news-app cleanup`. See [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md#shelley-database-filling-up-storage) for details.
+> ⚠️ **Storage Warning**: There is a known issue where raw LLM request/response data is stored in the Shelley database (`~/.config/shelley/shelley.db`) and is **not automatically cleaned up**. The `news-app cleanup` command only removes parsed conversation records, not the underlying raw data. Over time, this can fill up your VM's storage. Monitor your disk usage and the database size periodically. See [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md#shelley-database-filling-up-storage) for mitigation steps.
 
 ## Quick Start
 

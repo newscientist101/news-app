@@ -285,7 +285,7 @@ sqlite3 db.sqlite3 "PRAGMA integrity_check;"
 
 **Symptoms:** VM storage is full or nearly full, `~/.config/shelley/shelley.db` is very large
 
-> ⚠️ **This is a known issue.** Each job run creates conversations in the Shelley database that are NOT automatically cleaned up by Shelley itself. Without the cleanup service, this can easily fill up your VM's storage.
+> ⚠️ **This is a known bug.** When the Shelley service processes LLM requests, the raw request/response data is stored in the Shelley database and is **not automatically cleaned up**. The `news-app cleanup` command only removes the parsed conversation records, **not the underlying raw LLM data**. This means storage will continue to grow over time even with cleanup running.
 
 **Diagnostics:**
 ```bash
@@ -295,61 +295,63 @@ ls -lh ~/.config/shelley/shelley.db
 # Check disk usage
 df -h /home
 
-# Count old conversations
-sqlite3 ~/.config/shelley/shelley.db "SELECT COUNT(*) FROM conversations WHERE cwd IS NULL AND created_at < datetime('now', '-48 hours');"
+# Check database table sizes
+sqlite3 ~/.config/shelley/shelley.db ".tables"
+sqlite3 ~/.config/shelley/shelley.db "SELECT name, SUM(pgsize) as size FROM dbstat GROUP BY name ORDER BY size DESC;"
 ```
 
-**Solutions:**
+**Mitigation (partial):**
 
-1. **Verify cleanup timer is running**
+The `news-app cleanup` command helps reduce growth by removing conversation records, but does not fully solve the problem:
+
+```bash
+# Run cleanup to remove old conversation records
+./news-app cleanup
+
+# Vacuum to reclaim some space
+sqlite3 ~/.config/shelley/shelley.db "VACUUM;"
+```
+
+**Workarounds:**
+
+1. **Monitor disk usage regularly**
    ```bash
-   systemctl status news-cleanup.timer
-   
-   # If not running, enable it:
-   sudo systemctl enable news-cleanup.timer
-   sudo systemctl start news-cleanup.timer
+   df -h /home
+   ls -lh ~/.config/shelley/shelley.db
    ```
 
-2. **Run cleanup manually**
-   ```bash
-   # See what would be cleaned up
-   ./news-app cleanup --dry-run
-   
-   # Actually clean up (default: conversations older than 48 hours)
-   ./news-app cleanup
-   
-   # Clean up more aggressively (older than 24 hours)
-   ./news-app cleanup --max-age 24
-   ```
+2. **Reduce job frequency** to slow the growth rate
 
-3. **Check cleanup is working**
+3. **Manual database cleanup** (use with caution)
    ```bash
-   # View cleanup service logs
-   journalctl -u news-cleanup.service --since "7 days ago"
-   
-   # Manually trigger the cleanup service
-   sudo systemctl start news-cleanup.service
-   ```
-
-4. **Emergency cleanup if storage is critical**
-   ```bash
-   # Stop services first
+   # Stop all services first
    sudo systemctl stop news-app
+   sudo systemctl stop shelley  # if applicable
    
-   # Aggressive cleanup (older than 12 hours)
-   ./news-app cleanup --max-age 12
+   # Back up the database
+   cp ~/.config/shelley/shelley.db ~/.config/shelley/shelley.db.backup
    
-   # Vacuum the database to reclaim space
+   # Vacuum to reclaim space
    sqlite3 ~/.config/shelley/shelley.db "VACUUM;"
    
    # Restart services
    sudo systemctl start news-app
    ```
 
-**Prevention:**
-- Ensure `news-cleanup.timer` is enabled and running
-- Consider reducing job frequency if storage is limited
-- Monitor disk usage periodically: `df -h`
+4. **Reset Shelley database** (last resort - loses all conversation history)
+   ```bash
+   sudo systemctl stop news-app
+   sudo systemctl stop shelley  # if applicable
+   
+   mv ~/.config/shelley/shelley.db ~/.config/shelley/shelley.db.old
+   
+   sudo systemctl start shelley
+   sudo systemctl start news-app
+   ```
+
+**Long-term:**
+- This is a bug in the Shelley service that needs to be fixed upstream
+- Monitor for updates to Shelley that address this issue
 
 ---
 

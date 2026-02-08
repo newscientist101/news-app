@@ -164,4 +164,4 @@ The job runner uses the following Shelley settings:
 - Cleanup user ID: `cleanup`
 - Troubleshoot user ID: `news-app-troubleshoot`
 
-> ⚠️ **Storage Warning:** Conversations created by the job runner are stored in `~/.config/shelley/shelley.db` and are NOT automatically cleaned up by Shelley. The `news-cleanup.timer` service must be running to prevent the database from filling up your VM's storage. Verify with: `systemctl status news-cleanup.timer`
+> ⚠️ **Storage Warning:** There is a known bug where raw LLM request/response data is stored in `~/.config/shelley/shelley.db` and is **not automatically cleaned up** by Shelley. The `news-app cleanup` command only removes parsed conversation records, not the underlying raw data. Monitor disk usage and database size regularly. See [TROUBLESHOOTING.md](TROUBLESHOOTING.md#shelley-database-filling-up-storage) for mitigation steps.

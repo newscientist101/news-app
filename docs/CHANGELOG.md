@@ -8,7 +8,7 @@ All notable changes to this project are documented in this file.
 - Auto-troubleshooting service that diagnoses failed job runs daily
 - Troubleshooting reports saved to `logs/troubleshoot/`
 - Token usage warning in README
-- Storage warning about Shelley database cleanup requirement
+- Storage warning about Shelley database bug (raw LLM data not cleaned up)
 - Troubleshooting section for storage issues
 
 ### Changed
