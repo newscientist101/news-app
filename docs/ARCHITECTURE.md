@@ -167,3 +167,41 @@ text := conv.GetLastAgentText()
 ```
 
 The agent spawns a subagent to search the web. The prompt includes an instruction to wait for subagent completion before returning.
+
+## Resilience Features
+
+### Service Restart Recovery
+
+The app includes several mechanisms to handle service restarts gracefully:
+
+1. **Stuck Job Detection**: On startup, the web server scans for job runs stuck in "running" state and marks them as failed with the error message "job interrupted by service restart".
+
+2. **Separate Process Execution**: When jobs are triggered manually (not via systemd), they run as independent processes rather than goroutines within the web server. This prevents them from being killed when the web server restarts.
+
+3. **Signal Handling**: Job runners listen for SIGTERM and SIGINT signals and attempt graceful shutdown:
+   - Cancel ongoing operations via context
+   - Wait up to 10 seconds for cleanup
+   - Update database status before exit
+
+4. **Context Propagation**: The job runner respects context cancellation throughout its execution:
+   - During conversation polling
+   - During content fetching
+   - During database operations
+
+### Manual Recovery
+
+If a job was killed but the Shelley conversation completed successfully, you can manually recover the results:
+
+```bash
+# Extract conversation results to JSON
+sqlite3 ~/.config/shelley/shelley.db "SELECT json_extract(llm_data, '$.Content[0].Text') FROM messages WHERE conversation_id='CONV_ID' AND type='agent' ORDER BY sequence_id DESC LIMIT 1;" > articles.json
+
+# Process the articles
+./news-app process-articles <job_id> articles.json
+```
+
+### Best Practices
+
+- **Use systemd services**: Prefer scheduled jobs over manual runs for production workloads
+- **Monitor disk space**: The Shelley database can grow large; see [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
+- **Check logs after restarts**: Review `/var/log/syslog` and `journalctl -u news-app` for stuck job recovery messages

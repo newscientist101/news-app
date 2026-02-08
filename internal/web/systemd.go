@@ -133,7 +133,21 @@ func writeFileWithSudo(path, content string) error {
 	return cmd.Run()
 }
 
+// runJobDirectly runs a job as a separate process (not as part of the web server).
+// This ensures jobs survive web server restarts.
 func runJobDirectly(jobID int64) {
 	cmd := exec.Command(jobRunnerPath, jobRunnerArgs, fmt.Sprintf("%d", jobID))
-	cmd.Run()
+	cmd.Dir = workingDir
+	
+	// Run in background - don't wait for completion
+	// The process will run independently of the web server
+	if err := cmd.Start(); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to start job %d: %v\n", jobID, err)
+		return
+	}
+	
+	// Detach - don't wait for it to finish
+	go func() {
+		cmd.Wait() // Clean up zombie process
+	}()
 }

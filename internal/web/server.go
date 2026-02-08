@@ -1,6 +1,7 @@
 package web
 
 import (
+	"context"
 	"crypto/rand"
 	"database/sql"
 	"encoding/base64"
@@ -184,6 +185,12 @@ func (s *Server) setUpDatabase(dbPath string) error {
 	if err := db.RunMigrations(wdb); err != nil {
 		return fmt.Errorf("failed to run migrations: %w", err)
 	}
+
+	// Recover any jobs stuck in "running" state on startup
+	if err := s.recoverStuckJobs(); err != nil {
+		slog.Warn("failed to recover stuck jobs", "error", err)
+	}
+
 	return nil
 }
 
@@ -441,4 +448,64 @@ func (s *Server) jsonOK(w http.ResponseWriter, data any) {
 
 func (s *Server) jsonStatus(w http.ResponseWriter, status string) {
 	s.jsonOK(w, map[string]string{"status": status})
+}
+
+// recoverStuckJobs marks any jobs stuck in "running" state as failed on startup.
+// This handles the case where the server was killed/restarted while jobs were running.
+func (s *Server) recoverStuckJobs() error {
+	ctx := context.Background()
+	
+	// Find all job_runs with status='running'
+	rows, err := s.DB.QueryContext(ctx, `
+		SELECT id, job_id, started_at 
+		FROM job_runs 
+		WHERE status='running' 
+		ORDER BY started_at DESC
+	`)
+	if err != nil {
+		return fmt.Errorf("query stuck jobs: %w", err)
+	}
+	defer rows.Close()
+
+	var stuckRuns []struct{
+		ID int64
+		JobID int64
+		StartedAt string
+	}
+
+	for rows.Next() {
+		var run struct{
+			ID int64
+			JobID int64
+			StartedAt string
+		}
+		if err := rows.Scan(&run.ID, &run.JobID, &run.StartedAt); err != nil {
+			return fmt.Errorf("scan row: %w", err)
+		}
+		stuckRuns = append(stuckRuns, run)
+	}
+
+	if len(stuckRuns) == 0 {
+		return nil
+	}
+
+	slog.Info("recovering stuck jobs", "count", len(stuckRuns))
+
+	// Mark them as failed
+	for _, run := range stuckRuns {
+		_, err := s.DB.ExecContext(ctx, `
+			UPDATE job_runs 
+			SET status='failed', 
+			    error_message='job interrupted by service restart',
+			    completed_at=datetime('now')
+			WHERE id=?
+		`, run.ID)
+		if err != nil {
+			slog.Warn("failed to update stuck run", "run_id", run.ID, "error", err)
+			continue
+		}
+		slog.Info("marked run as failed", "run_id", run.ID, "job_id", run.JobID)
+	}
+
+	return nil
 }

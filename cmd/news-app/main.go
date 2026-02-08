@@ -6,7 +6,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 	"time"
 
 	"github.com/exedev/news-app/internal/db"
@@ -93,9 +95,36 @@ func runJobCmd(args []string) error {
 	}
 	defer dbConn.Close()
 
-	// Run the job
+	// Set up context with signal handling for graceful shutdown
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+	// Run job in goroutine
+	errChan := make(chan error, 1)
 	runner := jobrunner.NewRunner(dbConn, config)
-	return runner.Run(context.Background(), jobID)
+	go func() {
+		errChan <- runner.Run(ctx, jobID)
+	}()
+
+	// Wait for completion or signal
+	select {
+	case err := <-errChan:
+		return err
+	case sig := <-sigChan:
+		fmt.Fprintf(os.Stderr, "\nReceived signal %v, shutting down gracefully...\n", sig)
+		cancel() // Cancel context to stop job gracefully
+		
+		// Wait up to 10 seconds for graceful shutdown
+		select {
+		case err := <-errChan:
+			return err
+		case <-time.After(10 * time.Second):
+			return fmt.Errorf("shutdown timeout")
+		}
+	}
 }
 
 func cleanupCmd(args []string) error {
