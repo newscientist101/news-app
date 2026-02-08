@@ -37,6 +37,10 @@ Access at your exe.dev VM URL (e.g., `https://your-vm.exe.xyz:8000/`)
 - [ARCHITECTURE.md](docs/ARCHITECTURE.md) - System design and data flow
 - [DEPLOYMENT.md](docs/DEPLOYMENT.md) - Systemd services and deployment guide
 - [BUILD.md](docs/BUILD.md) - Build instructions and development setup
+- [API.md](docs/API.md) - REST API reference
+- [CONFIGURATION.md](docs/CONFIGURATION.md) - Environment variables and settings
+- [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) - Common issues and solutions
+- [CHANGELOG.md](docs/CHANGELOG.md) - Version history
 - [AGENTS.md](docs/AGENTS.md) - Agent instructions for AI assistants
 
 ## Code Layout
