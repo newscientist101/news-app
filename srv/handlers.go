@@ -161,7 +161,6 @@ func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 		CSRFToken:  s.getCSRFToken(r),
 	}
 	
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := s.renderTemplate(w, "dashboard.html", data); err != nil {
 		http.Error(w, err.Error(), 500)
 	}
@@ -181,7 +180,6 @@ func (s *Server) handleJobsList(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	data := PageData{User: user, Jobs: jobs, CSRFToken: s.getCSRFToken(r)}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := s.renderTemplate(w, "jobs.html", data); err != nil {
 		http.Error(w, err.Error(), 500)
 	}
@@ -195,7 +193,6 @@ func (s *Server) handleJobNew(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	data := PageData{User: user, CSRFToken: s.getCSRFToken(r)}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := s.renderTemplate(w, "job_new.html", data); err != nil {
 		http.Error(w, err.Error(), 500)
 	}
@@ -249,7 +246,6 @@ func (s *Server) handleJobDetail(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	data := PageData{User: user, Job: &job, Articles: articles, TotalCount: count, Page: page, CSRFToken: s.getCSRFToken(r)}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := s.renderTemplate(w, "job_detail.html", data); err != nil {
 		http.Error(w, err.Error(), 500)
 	}
@@ -277,7 +273,6 @@ func (s *Server) handleJobEdit(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	data := PageData{User: user, Job: &job, CSRFToken: s.getCSRFToken(r)}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := s.renderTemplate(w, "job_edit.html", data); err != nil {
 		http.Error(w, err.Error(), 500)
 	}
@@ -399,7 +394,6 @@ func (s *Server) handleArticlesList(w http.ResponseWriter, r *http.Request) {
 		JobFilter:   f.JobFilter,
 		CSRFToken:   s.getCSRFToken(r),
 	}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := s.renderTemplate(w, "articles.html", data); err != nil {
 		http.Error(w, err.Error(), 500)
 	}
@@ -427,7 +421,6 @@ func (s *Server) handleArticleDetail(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	data := PageData{User: user, Article: &article, CSRFToken: s.getCSRFToken(r)}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := s.renderTemplate(w, "article_detail.html", data); err != nil {
 		http.Error(w, err.Error(), 500)
 	}
@@ -447,7 +440,6 @@ func (s *Server) handlePreferences(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	data := PageData{User: user, Preferences: &prefs, CSRFToken: s.getCSRFToken(r)}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := s.renderTemplate(w, "preferences.html", data); err != nil {
 		http.Error(w, err.Error(), 500)
 	}
@@ -474,7 +466,6 @@ func (s *Server) handleRuns(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	data := PageData{User: user, RunningRuns: runningRuns, RecentRuns: recentRuns, CSRFToken: s.getCSRFToken(r)}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := s.renderTemplate(w, "runs.html", data); err != nil {
 		http.Error(w, err.Error(), 500)
 	}

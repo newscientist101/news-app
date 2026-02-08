@@ -412,6 +412,7 @@ func (s *Server) renderTemplate(w http.ResponseWriter, name string, data any) er
 	if !ok {
 		return fmt.Errorf("template %q not found", name)
 	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := tmpl.ExecuteTemplate(w, "layout", data); err != nil {
 		return fmt.Errorf("execute template %q: %w", name, err)
 	}
