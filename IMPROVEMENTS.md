@@ -154,12 +154,14 @@ Users can't see detailed logs of what happened during a job run.
 
 **Resolution:** Added `log_path` column to job_runs table. run-job.sh now captures all output to timestamped log files in `logs/runs/`. Added `/api/runs/{id}/log` endpoint and "View Log" button with modal viewer on runs page. Supports auto-refresh for watching live job progress.
 
-### 15. Discord Notifications Have No Retry
+### 15. Discord Notifications Have No Retry ✅ COMPLETED
 **Issue: Reliability**
 
 Discord webhook calls can fail silently.
 
 **Recommendation:** Add retry logic or queue failed notifications.
+
+**Resolution:** Added send_discord_notification() function with 3 retries and exponential backoff. Handles rate limiting (429) with longer delays.
 
 ### 16. Conversation Cleanup Could Be Better
 **Issue: Resource Management**
