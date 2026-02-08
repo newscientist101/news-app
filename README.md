@@ -10,6 +10,8 @@ A multi-user web app that retrieves news articles using the Shelley AI agent. Us
 
 > ⚠️ **Storage Warning**: There is a known issue where raw LLM request/response data is stored in the Shelley database (`~/.config/shelley/shelley.db`) and is **not automatically cleaned up**. The `news-app cleanup` command only removes parsed conversation records, not the underlying raw data. Over time, this can fill up your VM's storage. Monitor your disk usage and the database size periodically. See [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md#shelley-database-filling-up-storage) for mitigation steps.
 
+> ⚠️ **API Stability Warning**: This app uses the Shelley AI agent API, which is under active development and changes frequently. The app may break when the API changes, but the built-in troubleshooting agent will automatically attempt to diagnose and fix issues. Check `logs/troubleshoot/` for automated repair reports.
+
 ## Quick Start
 
 ```bash
