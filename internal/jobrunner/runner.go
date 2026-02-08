@@ -17,7 +17,7 @@ import (
 	"sync"
 	"time"
 
-	"srv.exe.dev/db/dbgen"
+	"srv.exe.dev/internal/db/dbgen"
 	"srv.exe.dev/internal/util"
 )
 

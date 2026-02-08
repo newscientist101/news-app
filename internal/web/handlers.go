@@ -1,4 +1,4 @@
-package srv
+package web
 
 import (
 	"database/sql"
@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"srv.exe.dev/db/dbgen"
+	"srv.exe.dev/internal/db/dbgen"
 )
 
 // searchTermsRE matches quoted strings or non-space sequences for search parsing.

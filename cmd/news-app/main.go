@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"time"
 
-	"srv.exe.dev/db"
-	"srv.exe.dev/jobrunner"
-	"srv.exe.dev/srv"
+	"srv.exe.dev/internal/db"
+	"srv.exe.dev/internal/jobrunner"
+	"srv.exe.dev/internal/web"
 )
 
 func main() {
@@ -63,7 +63,7 @@ func runServer() error {
 		hostname = "unknown"
 	}
 
-	server, err := srv.New("db.sqlite3", hostname)
+	server, err := web.New("db.sqlite3", hostname)
 	if err != nil {
 		return fmt.Errorf("create server: %w", err)
 	}

@@ -14,7 +14,7 @@
 make build
 
 # Or manually:
-go build -o news-app ./cmd/srv
+go build -o news-app ./cmd/news-app
 chmod +x news-app
 ```
 

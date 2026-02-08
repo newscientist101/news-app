@@ -1,4 +1,4 @@
-package srv
+package web
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"srv.exe.dev/db/dbgen"
+	"srv.exe.dev/internal/db/dbgen"
 	"srv.exe.dev/internal/util"
 )
 

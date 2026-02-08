@@ -1,4 +1,4 @@
-package srv
+package web
 
 import (
 	"crypto/rand"
@@ -16,8 +16,8 @@ import (
 	"sync"
 	"time"
 
-	"srv.exe.dev/db"
-	"srv.exe.dev/db/dbgen"
+	"srv.exe.dev/internal/db"
+	"srv.exe.dev/internal/db/dbgen"
 	"srv.exe.dev/internal/util"
 )
 

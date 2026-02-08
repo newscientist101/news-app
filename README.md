@@ -6,10 +6,10 @@ A multi-user web app that retrieves news articles using the Shelley AI agent. Us
 
 ```bash
 # Build
-go build -o news-app ./cmd/srv/
+go build -o news-app ./cmd/news-app/
 
 # Install systemd services
-sudo ./scripts/setup-systemd.sh
+sudo ./deploy/setup-systemd.sh
 
 # Or run locally without systemd
 ./news-app -listen :8000
@@ -37,28 +37,32 @@ Access at: http://localhost:8000/
 
 ```
 news-app/
-├── cmd/srv/          # Main entrypoint
-├── srv/              # HTTP server
-│   ├── server.go     # Router and server setup
-│   ├── handlers.go   # Page handlers
-│   ├── api.go        # API handlers
-│   ├── systemd.go    # Job scheduling
-│   ├── templates/    # HTML templates
-│   └── static/       # CSS, JS
-├── jobrunner/        # Job execution (Go implementation)
-│   ├── runner.go     # Main job logic
-│   ├── shelley.go    # Shelley API client
-│   ├── content.go    # Article content extraction
-│   └── discord.go    # Discord notifications
-├── db/
-│   ├── db.go         # Database setup
-│   ├── migrations/   # SQL migrations
-│   ├── queries/      # sqlc queries
-│   └── dbgen/        # Generated code
-├── scripts/
-│   └── setup-systemd.sh  # Service installation script
-├── articles/         # Stored article content
-└── logs/             # Job run logs
+├── cmd/news-app/        # Main entrypoint
+├── internal/
+│   ├── web/             # HTTP server
+│   │   ├── server.go    # Router and server setup
+│   │   ├── handlers.go  # Page handlers
+│   │   ├── api.go       # API handlers
+│   │   ├── systemd.go   # Job scheduling
+│   │   ├── templates/   # HTML templates
+│   │   └── static/      # CSS, JS
+│   ├── jobrunner/       # Job execution
+│   │   ├── runner.go    # Main job logic
+│   │   ├── shelley.go   # Shelley API client
+│   │   ├── content.go   # Article content extraction
+│   │   └── discord.go   # Discord notifications
+│   ├── db/
+│   │   ├── db.go        # Database setup
+│   │   ├── migrations/  # SQL migrations
+│   │   ├── queries/     # sqlc queries
+│   │   └── dbgen/       # Generated code
+│   └── util/            # Shared utilities
+├── deploy/              # Deployment files
+│   ├── setup-systemd.sh # Service installation
+│   └── *.service/*.timer
+├── docs/                # Documentation
+├── articles/            # Stored article content
+└── logs/                # Job run logs
 ```
 
 ## Systemd Services

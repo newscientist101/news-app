@@ -1,4 +1,4 @@
-package srv
+package web
 
 import (
 	"net/http"

@@ -8,10 +8,10 @@ A multi-user web app that retrieves news articles using the Shelley AI agent. Se
 
 ## Key Files
 
-- `srv/server.go` - HTTP router and server setup
-- `srv/handlers.go` - Page handlers (dashboard, jobs, job edit, articles, preferences)
-- `srv/api.go` - API handlers (CRUD, job control, article content)
-- `srv/systemd.go` - Creates/removes systemd timers for job scheduling
+- `internal/web/server.go` - HTTP router and server setup
+- `internal/web/handlers.go` - Page handlers (dashboard, jobs, job edit, articles, preferences)
+- `internal/web/api.go` - API handlers (CRUD, job control, article content)
+- `internal/web/systemd.go` - Creates/removes systemd timers for job scheduling
 - `run-job.sh` - Job runner script (calls Shelley API, fetches articles)
 - `db/migrations/` - Database schema
 - `db/queries/` - sqlc query definitions
@@ -20,14 +20,14 @@ A multi-user web app that retrieves news articles using the Shelley AI agent. Se
 
 ### Adding a new page
 
-1. Add handler in `srv/handlers.go`
-2. Add route in `srv/server.go`
-3. Create template in `srv/templates/`
+1. Add handler in `internal/web/handlers.go`
+2. Add route in `internal/web/server.go`
+3. Create template in `internal/web/templates/`
 
 ### Adding a new API endpoint
 
-1. Add handler in `srv/api.go`
-2. Add route in `srv/server.go`
+1. Add handler in `internal/web/api.go`
+2. Add route in `internal/web/server.go`
 
 ### Modifying database schema
 

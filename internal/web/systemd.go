@@ -1,4 +1,4 @@
-package srv
+package web
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"srv.exe.dev/db/dbgen"
+	"srv.exe.dev/internal/db/dbgen"
 	"srv.exe.dev/internal/util"
 )
 

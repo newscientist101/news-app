@@ -77,7 +77,7 @@ fi
 
 # Verify app directory
 if [[ ! -f "$APP_DIR/news-app" ]]; then
-    error "Binary not found: $APP_DIR/news-app\nBuild it first with: go build -o news-app ./cmd/srv/"
+    error "Binary not found: $APP_DIR/news-app\nBuild it first with: go build -o news-app ./cmd/news-app/"
 fi
 
 # Uninstall if requested

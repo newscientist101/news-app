@@ -16,10 +16,10 @@ This guide explains how to deploy the news-app on a Linux server with systemd.
 # Clone and build
 git clone <repo-url> /home/youruser/news-app
 cd /home/youruser/news-app
-go build -o news-app ./cmd/srv/
+go build -o news-app ./cmd/news-app/
 
 # Run setup script
-./scripts/setup-systemd.sh
+./deploy/setup-systemd.sh
 ```
 
 ## Services Overview
