@@ -310,7 +310,7 @@ func (s *Server) csrfProtect(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userID := strings.TrimSpace(r.Header.Get("X-ExeDev-UserID"))
 		if userID == "" {
-			s.jsonError(w, "Unauthorized", http.StatusUnauthorized)
+			s.jsonUnauthorized(w)
 			return
 		}
 		
@@ -435,6 +435,10 @@ func (s *Server) jsonError(w http.ResponseWriter, msg string, code int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	json.NewEncoder(w).Encode(map[string]string{"error": msg})
+}
+
+func (s *Server) jsonUnauthorized(w http.ResponseWriter) {
+	s.jsonError(w, "Unauthorized", http.StatusUnauthorized)
 }
 
 func (s *Server) jsonOK(w http.ResponseWriter, data any) {

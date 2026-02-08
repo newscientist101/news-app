@@ -46,7 +46,7 @@ type UpdatePreferencesRequest struct {
 func (s *Server) handleCreateJob(w http.ResponseWriter, r *http.Request) {
 	user, err := s.getOrCreateUser(r)
 	if err != nil {
-		s.jsonError(w, "Unauthorized", 401)
+		s.jsonUnauthorized(w)
 		return
 	}
 	
@@ -99,7 +99,7 @@ func (s *Server) handleCreateJob(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleUpdateJob(w http.ResponseWriter, r *http.Request) {
 	user, err := s.getOrCreateUser(r)
 	if err != nil {
-		s.jsonError(w, "Unauthorized", 401)
+		s.jsonUnauthorized(w)
 		return
 	}
 	
@@ -143,7 +143,7 @@ func (s *Server) handleUpdateJob(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleDeleteJob(w http.ResponseWriter, r *http.Request) {
 	user, err := s.getOrCreateUser(r)
 	if err != nil {
-		s.jsonError(w, "Unauthorized", 401)
+		s.jsonUnauthorized(w)
 		return
 	}
 	
@@ -170,7 +170,7 @@ func (s *Server) handleDeleteJob(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleRunJob(w http.ResponseWriter, r *http.Request) {
 	user, err := s.getOrCreateUser(r)
 	if err != nil {
-		s.jsonError(w, "Unauthorized", 401)
+		s.jsonUnauthorized(w)
 		return
 	}
 	
@@ -213,7 +213,7 @@ func (s *Server) handleRunJob(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleStopJob(w http.ResponseWriter, r *http.Request) {
 	user, err := s.getOrCreateUser(r)
 	if err != nil {
-		s.jsonError(w, "Unauthorized", 401)
+		s.jsonUnauthorized(w)
 		return
 	}
 	
@@ -255,7 +255,7 @@ func (s *Server) handleStopJob(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleCancelRun(w http.ResponseWriter, r *http.Request) {
 	user, err := s.getOrCreateUser(r)
 	if err != nil {
-		s.jsonError(w, "Unauthorized", 401)
+		s.jsonUnauthorized(w)
 		return
 	}
 	
@@ -309,7 +309,7 @@ func (s *Server) handleCancelRun(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleUpdatePreferences(w http.ResponseWriter, r *http.Request) {
 	user, err := s.getOrCreateUser(r)
 	if err != nil {
-		s.jsonError(w, "Unauthorized", 401)
+		s.jsonUnauthorized(w)
 		return
 	}
 	
@@ -345,7 +345,7 @@ func (s *Server) handleUpdatePreferences(w http.ResponseWriter, r *http.Request)
 func (s *Server) handleArticleContent(w http.ResponseWriter, r *http.Request) {
 	user, err := s.getOrCreateUser(r)
 	if err != nil {
-		s.jsonError(w, "Unauthorized", 401)
+		s.jsonUnauthorized(w)
 		return
 	}
 	
@@ -373,7 +373,7 @@ func (s *Server) handleArticleContent(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleRunLog(w http.ResponseWriter, r *http.Request) {
 	user, err := s.getOrCreateUser(r)
 	if err != nil {
-		s.jsonError(w, "Unauthorized", 401)
+		s.jsonUnauthorized(w)
 		return
 	}
 	
@@ -408,7 +408,7 @@ func (s *Server) handleRunLog(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleDeleteArticles(w http.ResponseWriter, r *http.Request) {
 	user, err := s.getOrCreateUser(r)
 	if err != nil {
-		s.jsonError(w, "Unauthorized", 401)
+		s.jsonUnauthorized(w)
 		return
 	}
 
