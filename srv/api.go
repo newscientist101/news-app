@@ -206,7 +206,7 @@ func (s *Server) handleRunJob(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	// Run immediately via systemd
-	serviceName := fmt.Sprintf("news-job-%d", job.ID)
+	serviceName := jobServiceName(job.ID)
 	cmd := exec.Command("sudo", "systemctl", "start", serviceName+".service")
 	if err := cmd.Run(); err != nil {
 		slog.Warn("systemd start failed, running directly", "job_id", job.ID, "error", err)
@@ -244,7 +244,7 @@ func (s *Server) handleStopJob(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	// Stop via systemd
-	serviceName := fmt.Sprintf("news-job-%d", job.ID)
+	serviceName := jobServiceName(job.ID)
 	cmd := exec.Command("sudo", "systemctl", "stop", serviceName+".service")
 	cmd.Run()
 	
@@ -290,7 +290,7 @@ func (s *Server) handleCancelRun(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	// Try to stop the systemd service if it's still running
-	serviceName := fmt.Sprintf("news-job-%d", run.JobID)
+	serviceName := jobServiceName(run.JobID)
 	cmd := exec.Command("sudo", "systemctl", "stop", serviceName+".service")
 	cmd.Run() // Ignore errors - service may not be running
 	

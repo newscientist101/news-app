@@ -11,6 +11,10 @@ import (
 	"srv.exe.dev/internal/util"
 )
 
+func jobServiceName(id int64) string {
+	return fmt.Sprintf("news-job-%d", id)
+}
+
 // Config with defaults, overridable via environment variables
 var (
 	systemdDir    = util.GetEnv("NEWS_APP_SYSTEMD_DIR", "/etc/systemd/system")
@@ -21,7 +25,7 @@ var (
 )
 
 func createSystemdTimer(job dbgen.Job) error {
-	serviceName := fmt.Sprintf("news-job-%d", job.ID)
+	serviceName := jobServiceName(job.ID)
 	
 	// Create service file
 	serviceContent := fmt.Sprintf(`[Unit]
@@ -77,7 +81,7 @@ WantedBy=timers.target
 }
 
 func updateSystemdTimer(job dbgen.Job) error {
-	serviceName := fmt.Sprintf("news-job-%d", job.ID)
+	serviceName := jobServiceName(job.ID)
 	
 	if job.IsActive == 0 {
 		// Job is inactive - stop timer but don't stop running service
@@ -96,7 +100,7 @@ func updateSystemdTimer(job dbgen.Job) error {
 }
 
 func removeSystemdTimer(jobID int64) {
-	serviceName := fmt.Sprintf("news-job-%d", jobID)
+	serviceName := jobServiceName(jobID)
 	
 	// Stop the timer but don't stop the service - let running jobs complete
 	exec.Command("sudo", "systemctl", "stop", serviceName+".timer").Run()
