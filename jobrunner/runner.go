@@ -111,7 +111,7 @@ func (r *Runner) Run(ctx context.Context, jobID int64) error {
 	// Update job status
 	r.queries.UpdateJobStatus(ctx, dbgen.UpdateJobStatusParams{
 		ID:        jobID,
-		Status:    "running",
+		Status:    util.StatusRunning,
 		NextRunAt: job.NextRunAt,
 	})
 
@@ -465,12 +465,12 @@ func (r *Runner) finalizeRun(ctx context.Context, job dbgen.Job, runID int64, re
 	var runStatus string
 	var errorMsg string
 	if result.Error != nil {
-		runStatus = "failed"
+		runStatus = util.StatusFailed
 		errorMsg = result.Error.Error()
 	} else if result.ArticlesSaved == 0 {
 		runStatus = "completed_no_new"
 	} else {
-		runStatus = "completed"
+		runStatus = util.StatusCompleted
 	}
 
 	// Update job run
@@ -492,9 +492,9 @@ func (r *Runner) finalizeRun(ctx context.Context, job dbgen.Job, runID int64, re
 	}
 
 	// Update job status
-	jobStatus := "completed"
+	jobStatus := util.StatusCompleted
 	if result.Error != nil {
-		jobStatus = "failed"
+		jobStatus = util.StatusFailed
 	}
 
 	if job.IsOneTime == 1 {

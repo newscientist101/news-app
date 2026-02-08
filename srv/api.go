@@ -193,7 +193,7 @@ func (s *Server) handleRunJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	if job.Status == "running" {
+	if job.Status == util.StatusRunning {
 		s.jsonError(w, "Job is already running", http.StatusBadRequest)
 		return
 	}
@@ -229,7 +229,7 @@ func (s *Server) handleStopJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	if job.Status != "running" {
+	if job.Status != util.StatusRunning {
 		s.jsonError(w, "Job is not running", http.StatusBadRequest)
 		return
 	}
@@ -242,7 +242,7 @@ func (s *Server) handleStopJob(w http.ResponseWriter, r *http.Request) {
 	// Update job status to stopped/failed, preserving next_run_at
 	now := time.Now()
 	q.UpdateJobStatus(r.Context(), dbgen.UpdateJobStatusParams{
-		Status:    "stopped",
+		Status:    util.StatusStopped,
 		LastRunAt: &now,
 		NextRunAt: job.NextRunAt,
 		ID:        job.ID,
@@ -273,7 +273,7 @@ func (s *Server) handleCancelRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	if run.Status != "running" {
+	if run.Status != util.StatusRunning {
 		s.jsonError(w, "Run is not running", http.StatusBadRequest)
 		return
 	}
@@ -292,10 +292,10 @@ func (s *Server) handleCancelRun(w http.ResponseWriter, r *http.Request) {
 	
 	// Also update job status if it's still marked as running, preserving next_run_at
 	job, _ := q.GetJobByID(r.Context(), run.JobID)
-	if job.Status == "running" {
+	if job.Status == util.StatusRunning {
 		now := time.Now()
 		q.UpdateJobStatus(r.Context(), dbgen.UpdateJobStatusParams{
-			Status:    "cancelled",
+			Status:    util.StatusCancelled,
 			LastRunAt: &now,
 			NextRunAt: job.NextRunAt,
 			ID:        run.JobID,

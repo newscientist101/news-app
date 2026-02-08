@@ -9,10 +9,20 @@ import (
 
 // Job frequency constants
 const (
-	FreqHourly  = "hourly"
-	Freq6Hours  = "6hours"
-	FreqDaily   = "daily"
-	FreqWeekly  = "weekly"
+	FreqHourly = "hourly"
+	Freq6Hours = "6hours"
+	FreqDaily  = "daily"
+	FreqWeekly = "weekly"
+)
+
+// Job/run status constants
+const (
+	StatusPending   = "pending"
+	StatusRunning   = "running"
+	StatusCompleted = "completed"
+	StatusFailed    = "failed"
+	StatusStopped   = "stopped"
+	StatusCancelled = "cancelled"
 )
 
 // GetEnv returns the value of the environment variable, or the default if not set.
