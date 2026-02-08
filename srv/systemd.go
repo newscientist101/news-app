@@ -59,7 +59,7 @@ Persistent=true
 
 [Install]
 WantedBy=timers.target
-`, job.ID, job.Name, frequencyToCalendar(job.Frequency))
+`, job.ID, job.Name, util.FrequencyToCalendar(job.Frequency))
 		
 		timerPath := filepath.Join(systemdDir, serviceName+".timer")
 		if err := writeFileWithSudo(timerPath, timerContent); err != nil {
@@ -113,20 +113,7 @@ func removeSystemdTimer(jobID int64) {
 	exec.Command("sudo", "systemctl", "daemon-reload").Run()
 }
 
-func frequencyToCalendar(freq string) string {
-	switch freq {
-	case "hourly":
-		return "*-*-* *:00:00"
-	case "6hours":
-		return "*-*-* 00/6:00:00"
-	case "daily":
-		return "*-*-* 06:00:00"
-	case "weekly":
-		return "Mon *-*-* 06:00:00"
-	default:
-		return "*-*-* 06:00:00"
-	}
-}
+
 
 func writeFileWithSudo(path, content string) error {
 	// Write to temp file then move with sudo
