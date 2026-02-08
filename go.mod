@@ -1,4 +1,4 @@
-module srv.exe.dev
+module github.com/exedev/news-app
 
 go 1.25.6
 

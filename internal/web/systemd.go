@@ -6,8 +6,8 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"srv.exe.dev/internal/db/dbgen"
-	"srv.exe.dev/internal/util"
+	"github.com/exedev/news-app/internal/db/dbgen"
+	"github.com/exedev/news-app/internal/util"
 )
 
 func jobServiceName(id int64) string {

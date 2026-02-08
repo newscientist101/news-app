@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"time"
 
-	"srv.exe.dev/internal/db"
-	"srv.exe.dev/internal/jobrunner"
-	"srv.exe.dev/internal/web"
+	"github.com/exedev/news-app/internal/db"
+	"github.com/exedev/news-app/internal/jobrunner"
+	"github.com/exedev/news-app/internal/web"
 )
 
 func main() {

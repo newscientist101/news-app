@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"srv.exe.dev/internal/db/dbgen"
-	"srv.exe.dev/internal/util"
+	"github.com/exedev/news-app/internal/db/dbgen"
+	"github.com/exedev/news-app/internal/util"
 )
 
 type CreateJobRequest struct {

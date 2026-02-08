@@ -17,8 +17,8 @@ import (
 	"sync"
 	"time"
 
-	"srv.exe.dev/internal/db/dbgen"
-	"srv.exe.dev/internal/util"
+	"github.com/exedev/news-app/internal/db/dbgen"
+	"github.com/exedev/news-app/internal/util"
 )
 
 // Config holds configuration for the job runner.

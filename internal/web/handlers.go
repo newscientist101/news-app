@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"srv.exe.dev/internal/db/dbgen"
+	"github.com/exedev/news-app/internal/db/dbgen"
 )
 
 // searchTermsRE matches quoted strings or non-space sequences for search parsing.
