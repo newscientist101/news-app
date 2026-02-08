@@ -12,6 +12,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -32,6 +33,15 @@ type Config struct {
 	MaxParallel  int           // Max concurrent article fetches
 }
 
+func getEnvInt(key string, defaultVal int) int {
+	if v := os.Getenv(key); v != "" {
+		if i, err := strconv.Atoi(v); err == nil {
+			return i
+		}
+	}
+	return defaultVal
+}
+
 // DefaultConfig returns configuration with sensible defaults.
 func DefaultConfig() Config {
 	return Config{
@@ -39,10 +49,10 @@ func DefaultConfig() Config {
 		ArticlesDir:  util.GetEnv("NEWS_APP_ARTICLES_DIR", "/home/exedev/news-app/articles"),
 		LogsDir:      util.GetEnv("NEWS_APP_LOGS_DIR", "/home/exedev/news-app/logs/runs"),
 		ShelleyAPI:   util.GetEnv("NEWS_APP_SHELLEY_API", "http://localhost:9999"),
-		JobTimeout:   time.Duration(util.GetEnvInt("NEWS_JOB_TIMEOUT_SECS", 25*60)) * time.Second,
-		PollInterval: time.Duration(util.GetEnvInt("NEWS_JOB_POLL_INTERVAL_SECS", 10)) * time.Second,
-		StartDelay:   time.Duration(util.GetEnvInt("NEWS_JOB_START_DELAY_SECS", 60)) * time.Second,
-		MaxParallel:  util.GetEnvInt("NEWS_JOB_MAX_PARALLEL", 5),
+		JobTimeout:   time.Duration(getEnvInt("NEWS_JOB_TIMEOUT_SECS", 25*60)) * time.Second,
+		PollInterval: time.Duration(getEnvInt("NEWS_JOB_POLL_INTERVAL_SECS", 10)) * time.Second,
+		StartDelay:   time.Duration(getEnvInt("NEWS_JOB_START_DELAY_SECS", 60)) * time.Second,
+		MaxParallel:  getEnvInt("NEWS_JOB_MAX_PARALLEL", 5),
 	}
 }
 

@@ -3,7 +3,6 @@ package util
 
 import (
 	"os"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -12,17 +11,6 @@ import (
 func GetEnv(key, defaultVal string) string {
 	if v := strings.TrimSpace(os.Getenv(key)); v != "" {
 		return v
-	}
-	return defaultVal
-}
-
-// GetEnvInt parses an integer from an environment variable.
-// If the value is not set or invalid, the default is returned.
-func GetEnvInt(key string, defaultVal int) int {
-	if v := os.Getenv(key); v != "" {
-		if i, err := strconv.Atoi(v); err == nil {
-			return i
-		}
 	}
 	return defaultVal
 }
