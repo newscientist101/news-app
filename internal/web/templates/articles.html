@@ -35,6 +35,7 @@
 {{else}}Showing {{.TotalCount}} articles{{end}}
 </p>
 
+<div class="bulk-actions-placeholder"></div>
 <div class="bulk-actions">
     <label class="checkbox-label">
         <input type="checkbox" id="select-all"> Select all on this page
@@ -120,7 +121,46 @@ function updateSelectedCount() {
         selectAll.checked = selected === total && total > 0;
         selectAll.indeterminate = selected > 0 && selected < total;
     }
+    
+    // Update sticky state based on selection
+    updateStickyState();
 }
+
+// Sticky bulk-actions bar
+let bulkActionsTop = null;
+function updateStickyState() {
+    const bulkActions = document.querySelector('.bulk-actions');
+    const placeholder = document.querySelector('.bulk-actions-placeholder');
+    if (!bulkActions || !placeholder) return;
+    
+    const hasSelection = document.querySelectorAll('.article-select:checked').length > 0;
+    
+    if (!hasSelection) {
+        bulkActions.classList.remove('sticky');
+        placeholder.classList.remove('visible');
+        placeholder.style.height = '';
+        return;
+    }
+    
+    // Store original position on first call
+    if (bulkActionsTop === null) {
+        bulkActionsTop = bulkActions.getBoundingClientRect().top + window.scrollY;
+    }
+    
+    if (window.scrollY > bulkActionsTop) {
+        if (!bulkActions.classList.contains('sticky')) {
+            placeholder.style.height = bulkActions.offsetHeight + 'px';
+            placeholder.classList.add('visible');
+            bulkActions.classList.add('sticky');
+        }
+    } else {
+        bulkActions.classList.remove('sticky');
+        placeholder.classList.remove('visible');
+        placeholder.style.height = '';
+    }
+}
+
+window.addEventListener('scroll', updateStickyState, { passive: true });
 
 function attachCheckboxListeners() {
     // Select all checkbox

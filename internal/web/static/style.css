@@ -352,6 +352,25 @@ h2 { margin: 1.5rem 0 1rem; }
     background: #f8f9fa;
     border-radius: 4px;
     margin-bottom: 1rem;
+    transition: box-shadow 0.2s;
+}
+
+.bulk-actions.sticky {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    border-radius: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.bulk-actions-placeholder {
+    display: none;
+}
+
+.bulk-actions-placeholder.visible {
+    display: block;
 }
 
 .checkbox-label {
