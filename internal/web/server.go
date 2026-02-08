@@ -450,17 +450,18 @@ func (s *Server) jsonStatus(w http.ResponseWriter, status string) {
 	s.jsonOK(w, map[string]string{"status": status})
 }
 
-// recoverStuckJobs marks any jobs stuck in "running" state as failed on startup.
+// recoverStuckJobs resumes any jobs stuck in "running" state on startup.
 // This handles the case where the server was killed/restarted while jobs were running.
 func (s *Server) recoverStuckJobs() error {
 	ctx := context.Background()
 	
 	// Find all job_runs with status='running'
 	rows, err := s.DB.QueryContext(ctx, `
-		SELECT id, job_id, started_at 
-		FROM job_runs 
-		WHERE status='running' 
-		ORDER BY started_at DESC
+		SELECT jr.id, jr.job_id, j.name, jr.started_at 
+		FROM job_runs jr
+		JOIN jobs j ON jr.job_id = j.id
+		WHERE jr.status='running' 
+		ORDER BY jr.started_at DESC
 	`)
 	if err != nil {
 		return fmt.Errorf("query stuck jobs: %w", err)
@@ -470,6 +471,7 @@ func (s *Server) recoverStuckJobs() error {
 	var stuckRuns []struct{
 		ID int64
 		JobID int64
+		JobName string
 		StartedAt string
 	}
 
@@ -477,9 +479,10 @@ func (s *Server) recoverStuckJobs() error {
 		var run struct{
 			ID int64
 			JobID int64
+			JobName string
 			StartedAt string
 		}
-		if err := rows.Scan(&run.ID, &run.JobID, &run.StartedAt); err != nil {
+		if err := rows.Scan(&run.ID, &run.JobID, &run.JobName, &run.StartedAt); err != nil {
 			return fmt.Errorf("scan row: %w", err)
 		}
 		stuckRuns = append(stuckRuns, run)
@@ -491,20 +494,45 @@ func (s *Server) recoverStuckJobs() error {
 
 	slog.Info("recovering stuck jobs", "count", len(stuckRuns))
 
-	// Mark them as failed
+	// Group by job_id to avoid restarting the same job multiple times
+	seenJobs := make(map[int64]bool)
+
+	// Mark the stuck runs as failed, reset job status, then restart the jobs
+	// The new run will check for existing conversations and resume them
 	for _, run := range stuckRuns {
+		// Mark old run as failed
 		_, err := s.DB.ExecContext(ctx, `
 			UPDATE job_runs 
 			SET status='failed', 
-			    error_message='job interrupted by service restart',
+			    error_message='interrupted by service restart (auto-restarting)',
 			    completed_at=datetime('now')
 			WHERE id=?
 		`, run.ID)
 		if err != nil {
-			slog.Warn("failed to update stuck run", "run_id", run.ID, "error", err)
+			slog.Warn("failed to mark run as failed", "run_id", run.ID, "error", err)
 			continue
 		}
-		slog.Info("marked run as failed", "run_id", run.ID, "job_id", run.JobID)
+
+		// Reset job status so new run can proceed
+		_, err = s.DB.ExecContext(ctx, `
+			UPDATE jobs 
+			SET status='idle'
+			WHERE id=?
+		`, run.JobID)
+		if err != nil {
+			slog.Warn("failed to reset job status", "job_id", run.JobID, "error", err)
+			continue
+		}
+
+		// Restart the job - it will resume from existing conversation if one exists
+		// Only restart each job once, even if multiple runs were stuck
+		if !seenJobs[run.JobID] {
+			seenJobs[run.JobID] = true
+			slog.Info("restarting job", "run_id", run.ID, "job_id", run.JobID, "job_name", run.JobName)
+			go runJobDirectly(run.JobID)
+		} else {
+			slog.Info("skipping duplicate restart", "run_id", run.ID, "job_id", run.JobID)
+		}
 	}
 
 	return nil
