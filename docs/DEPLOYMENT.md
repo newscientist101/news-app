@@ -1,25 +1,24 @@
 # Deployment Guide
 
-This guide explains how to deploy the news-app on a Linux server with systemd.
+This guide explains how to deploy the news-app on an exe.dev VM with systemd.
 
 ## Prerequisites
 
-- Linux with systemd
+- exe.dev VM (provides authentication proxy and Shelley API)
 - Go 1.21+ (for building)
 - SQLite3
-- Access to a Shelley API instance (default: localhost:9999)
-- (Optional) exe.dev proxy for authentication
+- Linux with systemd
 
 ## Quick Start
 
 ```bash
 # Clone and build
-git clone <repo-url> /home/youruser/news-app
-cd /home/youruser/news-app
+git clone <repo-url> /home/exedev/news-app
+cd /home/exedev/news-app
 go build -o news-app ./cmd/news-app/
 
 # Run setup script
-./deploy/setup-systemd.sh
+sudo ./deploy/setup-systemd.sh
 ```
 
 ## Services Overview
@@ -54,7 +53,6 @@ WorkingDirectory=/home/exedev/news-app
 ExecStart=/home/exedev/news-app/news-app -listen :8000
 Restart=on-failure
 RestartSec=5
-Environment=PATH=/usr/local/bin:/usr/bin:/bin
 
 [Install]
 WantedBy=multi-user.target
@@ -151,7 +149,7 @@ After=network.target
 
 [Service]
 Type=oneshot
-ExecStart=/home/exedev/news-app/cleanup-conversations.sh
+ExecStart=/home/exedev/news-app/news-app cleanup
 User=exedev
 WorkingDirectory=/home/exedev/news-app
 
@@ -163,7 +161,18 @@ WantedBy=multi-user.target
 - Finds Shelley conversations older than 48 hours
 - Only deletes API-created conversations (not interactive sessions)
 - Deletes child conversations (subagents) first
-- Logs results to stdout
+
+**Manual run:**
+```bash
+# Dry run to see what would be deleted
+./news-app cleanup --dry-run
+
+# Actually delete
+./news-app cleanup
+
+# Custom max age (hours)
+./news-app cleanup --max-age 72
+```
 
 **Timer:**
 ```ini
@@ -184,7 +193,7 @@ After=network.target
 
 [Service]
 Type=oneshot
-ExecStart=/home/exedev/news-app/troubleshoot-runs.sh
+ExecStart=/home/exedev/news-app/news-app troubleshoot
 User=exedev
 WorkingDirectory=/home/exedev/news-app
 
@@ -195,7 +204,19 @@ WantedBy=multi-user.target
 **What it does:**
 - Queries database for failed/problematic runs in last 24 hours
 - Creates a Shelley conversation with diagnostic prompt
-- Logs the conversation URL for review
+- Agent writes report to `logs/troubleshoot/report-{date}.md`
+
+**Manual run:**
+```bash
+# Dry run to see problems without creating conversation
+./news-app troubleshoot --dry-run
+
+# Actually run troubleshooting
+./news-app troubleshoot
+
+# Custom lookback period (hours)
+./news-app troubleshoot --lookback 48
+```
 
 **Timer:**
 ```ini
@@ -213,14 +234,10 @@ Set these in the service file's `[Service]` section or in a drop-in:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `NEWS_APP_DB_PATH` | `/home/exedev/news-app/db.sqlite3` | SQLite database path |
-| `NEWS_APP_ARTICLES_DIR` | `/home/exedev/news-app/articles` | Article storage directory |
-| `NEWS_APP_LOGS_DIR` | `/home/exedev/news-app/logs/runs` | Job run logs directory |
+| `NEWS_APP_DB_PATH` | `db.sqlite3` | SQLite database path |
+| `NEWS_APP_ARTICLES_DIR` | `articles` | Article storage directory |
+| `NEWS_APP_LOGS_DIR` | `logs/runs` | Job run logs directory |
 | `NEWS_APP_SHELLEY_API` | `http://localhost:9999` | Shelley API URL |
-| `NEWS_JOB_TIMEOUT` | `25m` | Job execution timeout |
-| `NEWS_JOB_POLL_INTERVAL` | `10s` | Shelley API poll interval |
-| `NEWS_JOB_START_DELAY` | `60s` | Max random delay before job starts |
-| `NEWS_JOB_MAX_PARALLEL` | `5` | Max concurrent article fetches |
 
 **Example drop-in:**
 ```bash
@@ -262,17 +279,11 @@ journalctl -u news-job-123 --since "2 hours ago"
 ### Application Logs
 ```
 logs/
-└── runs/
-    ├── run_1_20260208_120000.log
-    ├── run_2_20260208_130000.log
-    └── ...
+├── runs/              # Per-job-run logs
+│   └── run_{id}_{timestamp}.log
+└── troubleshoot/      # Auto-diagnosis reports
+    └── report-{date}.md
 ```
-
-Each job run creates a log file with:
-- Job metadata
-- Shelley API interactions
-- Article fetch results
-- Final status
 
 ## Troubleshooting
 
@@ -313,19 +324,20 @@ sudo -u exedev sudo systemctl daemon-reload
 ## Uninstalling
 
 ```bash
-# Stop and disable services
+# Run setup script with --uninstall
+sudo ./deploy/setup-systemd.sh --uninstall
+
+# Or manually:
 sudo systemctl stop news-app
 sudo systemctl disable news-app
 sudo systemctl stop news-cleanup.timer news-troubleshoot.timer
 sudo systemctl disable news-cleanup.timer news-troubleshoot.timer
 
-# Remove service files
 sudo rm /etc/systemd/system/news-app.service
 sudo rm /etc/systemd/system/news-cleanup.{service,timer}
 sudo rm /etc/systemd/system/news-troubleshoot.{service,timer}
 sudo rm /etc/systemd/system/news-job-*
 sudo rm /etc/sudoers.d/news-app
 
-# Reload systemd
 sudo systemctl daemon-reload
 ```

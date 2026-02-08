@@ -12,9 +12,12 @@ A multi-user web app that retrieves news articles using the Shelley AI agent. Se
 - `internal/web/handlers.go` - Page handlers (dashboard, jobs, job edit, articles, preferences)
 - `internal/web/api.go` - API handlers (CRUD, job control, article content)
 - `internal/web/systemd.go` - Creates/removes systemd timers for job scheduling
-- `run-job.sh` - Job runner script (calls Shelley API, fetches articles)
-- `db/migrations/` - Database schema
-- `db/queries/` - sqlc query definitions
+- `internal/jobrunner/runner.go` - Job execution logic (calls Shelley API, fetches articles)
+- `internal/jobrunner/shelley.go` - Shelley API client
+- `internal/jobrunner/cleanup.go` - Conversation cleanup (`news-app cleanup` subcommand)
+- `internal/jobrunner/troubleshoot.go` - Auto-diagnosis (`news-app troubleshoot` subcommand)
+- `internal/db/migrations/` - Database schema
+- `internal/db/queries/` - sqlc query definitions
 
 ## Common Tasks
 
@@ -31,17 +34,18 @@ A multi-user web app that retrieves news articles using the Shelley AI agent. Se
 
 ### Modifying database schema
 
-1. Create new migration file in `db/migrations/`
-2. Update queries in `db/queries/`
-3. Run `sqlc generate` in `db/`
+1. Create new migration file in `internal/db/migrations/`
+2. Update queries in `internal/db/queries/`
+3. Run `sqlc generate` in `internal/db/`
 
 ### Modifying job behavior
 
-Edit `run-job.sh`. Key sections:
-- Prompt building (lines 34-75)
-- Shelley API interaction (lines 80-145)
-- JSON extraction (lines 147-165)
-- Article fetching (lines 167-265)
+Edit `internal/jobrunner/runner.go`. Key methods:
+- `Run()` - Main entry point
+- `buildPrompt()` - Constructs the Shelley prompt
+- `runConversation()` - Shelley API interaction
+- `extractArticles()` - JSON extraction from response
+- `fetchArticleContent()` - HTTP fetch + content extraction
 
 ## Build & Deploy
 
@@ -50,13 +54,34 @@ make build
 sudo systemctl restart news-app
 ```
 
+## Subcommands
+
+The binary supports multiple subcommands:
+
+```bash
+# Run web server (default)
+./news-app -listen :8000
+
+# Run a job manually
+./news-app run-job {job_id}
+
+# Cleanup old conversations
+./news-app cleanup [--max-age 48] [--dry-run]
+
+# Diagnose failed runs
+./news-app troubleshoot [--lookback 24] [--dry-run]
+```
+
 ## Testing
 
 ```bash
 # Run a job manually
-./run-job.sh {job_id}
+./news-app run-job {job_id}
 
 # Check logs
 journalctl -u news-app -f
 journalctl -u news-job-{id} -f
+
+# Run tests
+go test ./...
 ```

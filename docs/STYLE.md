@@ -19,7 +19,7 @@ Shared utilities used across multiple packages. Contains:
 - **Business logic** - `CalculateNextRun()`, `FrequencyToCalendar()`
 
 ```go
-// Good: shared across srv and jobrunner
+// Good: shared across web and jobrunner
 util.GetEnv("NEWS_APP_DB_PATH", "/default/path")
 util.CalculateNextRun(frequency, isOneTime)
 

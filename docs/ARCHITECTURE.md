@@ -5,35 +5,35 @@
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
 │     Browser     │─────│   exe.dev Proxy │─────│   Go Server     │
-│                 │     │  (adds auth)   │     │   (port 8000)   │
+│                 │     │  (adds auth)    │     │   (port 8000)   │
 └─────────────────┘     └─────────────────┘     └────────┬────────┘
-                                                       │
-                                               ┌───────┴───────┐
-                                               │    SQLite     │
-                                               │  (db.sqlite3) │
-                                               └───────────────┘
+                                                         │
+                                                 ┌───────┴───────┐
+                                                 │    SQLite     │
+                                                 │  (db.sqlite3) │
+                                                 └───────────────┘
 
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│ systemd Timer  │─────│   run-job.sh   │─────│  Shelley API    │
-│ (scheduling)   │     │  (job runner)  │     │ (localhost:9999)│
+│  systemd Timer  │─────│ news-app run-job│─────│  Shelley API    │
+│  (scheduling)   │     │  (Go jobrunner) │     │ (localhost:9999)│
 └─────────────────┘     └────────┬────────┘     └─────────────────┘
-                               │
-                       ┌───────┴───────┐
-                       │   articles/   │
-                       │  (text files) │
-                       └───────────────┘
+                                 │
+                         ┌───────┴───────┐
+                         │   articles/   │
+                         │  (text files) │
+                         └───────────────┘
 ```
 
 ## Components
 
-### Go Web Server
+### Go Web Server (`internal/web/`)
 
 The main application server handles:
 - **Pages**: Dashboard, jobs list, job detail, job edit, articles, preferences
 - **API**: CRUD for jobs, run/stop jobs, update preferences, serve article content
 - **Auth**: Uses exe.dev proxy headers (`X-ExeDev-UserID`, `X-ExeDev-Email`)
 
-### SQLite Database
+### SQLite Database (`internal/db/`)
 
 Tables:
 - `users` - User accounts (created on first visit)
@@ -42,23 +42,28 @@ Tables:
 - `job_runs` - Execution history
 - `articles` - Article metadata (title, URL, summary, content_path)
 
-### Job Runner (run-job.sh)
+### Job Runner (`internal/jobrunner/`)
 
-Bash script that:
+Go implementation that:
 1. Reads job config from database
 2. Builds prompt with user's system prompt + job filters
 3. Creates conversation via Shelley API
 4. Polls for completion (checks `end_of_turn: true`)
 5. Extracts JSON array from response
-6. For each article URL, fetches full content via Python HTML parser
+6. For each article URL, fetches full content via go-readability
 7. Saves articles to `articles/job_{id}/article_{id}_{timestamp}.txt`
 8. Updates database with article metadata
+9. Sends optional Discord notifications
 
-### systemd Timers
+### systemd Timers (`deploy/`)
 
 Each job gets a systemd timer for scheduling:
-- `news-job-{id}.service` - Runs `run-job.sh {id}`
+- `news-job-{id}.service` - Runs `news-app run-job {id}`
 - `news-job-{id}.timer` - Triggers based on frequency
+
+Additional maintenance services:
+- `news-cleanup.timer` - Runs `news-app cleanup` every 48h
+- `news-troubleshoot.timer` - Runs `news-app troubleshoot` daily at 07:00
 
 ## Data Flow
 
@@ -80,10 +85,10 @@ Each job gets a systemd timer for scheduling:
 ### Running a Job
 
 1. systemd timer triggers (or user clicks "Run")
-2. `run-job.sh` executes:
+2. `news-app run-job {id}` executes:
    - Creates conversation with Shelley API
    - Agent searches web, returns JSON array
-   - Script fetches full content for each URL
+   - Fetches full content for each URL using go-readability
    - Saves to `articles/job_{id}/`
    - Updates database
 3. Optional: Discord notification on success/failure
@@ -121,6 +126,16 @@ Brief summary from agent...
 Full article text extracted from webpage...
 ```
 
+## Logs
+
+```
+logs/
+├── runs/           # Per-job-run logs
+│   └── run_{id}_{timestamp}.log
+└── troubleshoot/   # Auto-diagnosis reports
+    └── report-{date}.md
+```
+
 ## Authentication
 
 exe.dev proxy adds headers:
@@ -131,20 +146,24 @@ Server creates user record on first visit. All queries filter by `user_id`.
 
 ## Shelley API Integration
 
-The job runner uses the local Shelley API:
+The job runner uses the local Shelley API (see SHELLEY_API.md for details):
 
-```bash
-# Create conversation
-POST http://localhost:9999/api/conversations/new
-Headers:
-  Content-Type: application/json
-  X-Exedev-Userid: news-job-{id}
-  X-Shelley-Request: 1
-Body: {"message": "...prompt..."}
+```go
+// Create conversation
+client := jobrunner.NewShelleyClient("http://localhost:9999")
+convID, err := client.CreateConversation(ctx, jobID, prompt)
 
-# Poll for completion
-GET http://localhost:9999/api/conversation/{conv_id}
-# Check: .messages | last agent | .end_of_turn == true
+// Poll for completion
+for {
+    conv, _ := client.GetConversation(ctx, jobID, convID)
+    if conv.IsComplete() {
+        break
+    }
+    time.Sleep(10 * time.Second)
+}
+
+// Extract response text
+text := conv.GetLastAgentText()
 ```
 
 The agent spawns a subagent to search the web. The prompt includes an instruction to wait for subagent completion before returning.

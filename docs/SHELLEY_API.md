@@ -1,12 +1,14 @@
 # Shelley API Documentation
 
-The news-app uses the local Shelley API to run AI-powered news search jobs.
+The news-app uses the local Shelley API (available on exe.dev VMs) to run AI-powered news search jobs.
 
 ## Base URL
 
 ```
 http://localhost:9999
 ```
+
+The Shelley API runs locally on exe.dev VMs and provides access to various AI models.
 
 ## Authentication
 
@@ -172,7 +174,33 @@ The `Content` array contains blocks with `Type: 2` for text content.
 
 If a conversation fails, the last message will have `type: "error"` with details in `llm_data`.
 
-## Example: News Search Job
+## Go Client Usage
+
+The news-app includes a Go client for the Shelley API in `internal/jobrunner/shelley.go`:
+
+```go
+import "srv.exe.dev/internal/jobrunner"
+
+client := jobrunner.NewShelleyClient("http://localhost:9999")
+
+// Create conversation
+convID, err := client.CreateConversation(ctx, jobID, "Find recent AI news")
+
+// Poll until complete
+for {
+    conv, err := client.GetConversation(ctx, jobID, convID)
+    if conv.IsComplete() {
+        text := conv.GetLastAgentText()
+        break
+    }
+    time.Sleep(10 * time.Second)
+}
+
+// Archive when done
+client.ArchiveConversation(ctx, jobID, convID)
+```
+
+## Bash Example
 
 ```bash
 # Create conversation

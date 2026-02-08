@@ -4,8 +4,8 @@
 
 - Go 1.21+
 - SQLite3
-- Python 3 (for article content extraction)
 - sqlc (for regenerating database code)
+- exe.dev VM (for authentication and Shelley API)
 
 ## Building
 
@@ -35,11 +35,8 @@ mitmdump -p 3000 --mode reverse:http://localhost:8000 \
 ## Running as systemd Service
 
 ```bash
-# Install service file (already done)
-sudo cp news-app.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable news-app
-sudo systemctl start news-app
+# Run setup script
+sudo ./deploy/setup-systemd.sh
 
 # Check status
 systemctl status news-app
@@ -55,7 +52,7 @@ make build && sudo systemctl restart news-app
 
 ### Migrations
 
-Migrations are in `db/migrations/` and run automatically on startup.
+Migrations are in `internal/db/migrations/` and run automatically on startup.
 
 ```bash
 # View current schema
@@ -67,23 +64,32 @@ sqlite3 db.sqlite3 "SELECT * FROM jobs;"
 
 ### Regenerating sqlc Code
 
-If you modify queries in `db/queries/`:
+If you modify queries in `internal/db/queries/`:
 
 ```bash
-cd db
+cd internal/db
 sqlc generate
 ```
 
-## Job Runner
+## Subcommands
 
-The job runner script can be tested manually:
+The binary supports multiple subcommands:
 
 ```bash
-# Run a specific job
-./run-job.sh {job_id}
+# Run web server (default)
+./news-app -listen :8000
 
-# Check job logs
-journalctl -u news-job-{id} -f
+# Run a specific job
+./news-app run-job {job_id}
+
+# Cleanup old Shelley conversations
+./news-app cleanup [--max-age 48] [--dry-run]
+
+# Diagnose failed job runs
+./news-app troubleshoot [--lookback 24] [--dry-run]
+
+# Show help
+./news-app help
 ```
 
 ## Systemd Timers
@@ -111,13 +117,29 @@ rm -rf articles/job_*/
 sudo systemctl disable news-job-{id}.timer
 sudo rm /etc/systemd/system/news-job-{id}.*
 sudo systemctl daemon-reload
+
+# Clean old Shelley conversations
+./news-app cleanup
+```
+
+## Running Tests
+
+```bash
+# Run all tests
+go test ./...
+
+# Run with verbose output
+go test -v ./...
+
+# Run specific package tests
+go test ./internal/jobrunner/
 ```
 
 ## Troubleshooting
 
 ### Job times out
 
-The job runner waits up to 5 minutes for the agent. If timing out:
+The job runner waits up to 25 minutes for the agent. If timing out:
 - Check Shelley API is running: `curl http://localhost:9999/health`
 - Check job logs: `journalctl -u news-job-{id}`
 
@@ -126,14 +148,14 @@ The job runner waits up to 5 minutes for the agent. If timing out:
 If job completes but no articles:
 - Check logs for "No JSON array found"
 - The agent may not have returned valid JSON
-- View raw response in job logs
+- Run `./news-app troubleshoot --dry-run` to see recent failures
 
 ### Article content empty
 
 If articles have no full content:
 - The URL may be paywalled or block bots
 - Check the `.txt` file for error messages
-- The Python extractor only gets `<p>` tag content
+- The go-readability extractor may not handle the site's HTML
 
 ### Auth issues
 
