@@ -261,12 +261,12 @@ func (s *Server) csrfProtect(next http.HandlerFunc) http.HandlerFunc {
 		
 		token := r.Header.Get(csrfHeaderName)
 		if token == "" {
-			s.jsonError(w, "Missing CSRF token", http.StatusForbidden)
+			s.jsonError(w, "Forbidden: missing CSRF token", http.StatusForbidden)
 			return
 		}
 		
 		if !s.csrfTokens.ValidateToken(userID, token) {
-			s.jsonError(w, "Invalid CSRF token", http.StatusForbidden)
+			s.jsonError(w, "Forbidden: invalid CSRF token", http.StatusForbidden)
 			return
 		}
 		

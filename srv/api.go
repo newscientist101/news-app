@@ -51,18 +51,18 @@ func (s *Server) handleCreateJob(w http.ResponseWriter, r *http.Request) {
 	// Rate limit job creation per user
 	rateLimitKey := fmt.Sprintf("create-job:%d", user.ID)
 	if !s.rateLimiter.Allow(rateLimitKey) {
-		s.jsonError(w, "Too many requests. Please wait before creating another job.", http.StatusTooManyRequests)
+		s.jsonError(w, "Rate limit exceeded: please wait before creating another job", http.StatusTooManyRequests)
 		return
 	}
 	
 	var req CreateJobRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		s.jsonError(w, "Invalid JSON", 400)
+		s.jsonError(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 	
 	if req.Name == "" || req.Prompt == "" {
-		s.jsonError(w, "Name and prompt are required", 400)
+		s.jsonError(w, "Invalid request: name and prompt are required", http.StatusBadRequest)
 		return
 	}
 	
@@ -81,7 +81,7 @@ func (s *Server) handleCreateJob(w http.ResponseWriter, r *http.Request) {
 		NextRunAt: &nextRun,
 	})
 	if err != nil {
-		s.jsonError(w, "Failed to create job: "+err.Error(), 500)
+		s.jsonError(w, "Failed to create job", http.StatusInternalServerError)
 		return
 	}
 	
@@ -110,7 +110,7 @@ func (s *Server) handleUpdateJob(w http.ResponseWriter, r *http.Request) {
 	
 	var req UpdateJobRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		s.jsonError(w, "Invalid JSON", 400)
+		s.jsonError(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 	
@@ -127,7 +127,7 @@ func (s *Server) handleUpdateJob(w http.ResponseWriter, r *http.Request) {
 		UserID:    user.ID,
 	})
 	if err != nil {
-		s.jsonError(w, "Failed to update job", 500)
+		s.jsonError(w, "Failed to update job", http.StatusInternalServerError)
 		return
 	}
 	
@@ -158,7 +158,7 @@ func (s *Server) handleDeleteJob(w http.ResponseWriter, r *http.Request) {
 	q := dbgen.New(s.DB)
 	err = q.DeleteJob(r.Context(), dbgen.DeleteJobParams{ID: id, UserID: user.ID})
 	if err != nil {
-		s.jsonError(w, "Failed to delete job", 500)
+		s.jsonError(w, "Failed to delete job", http.StatusInternalServerError)
 		return
 	}
 	
@@ -175,7 +175,7 @@ func (s *Server) handleRunJob(w http.ResponseWriter, r *http.Request) {
 	// Rate limit job runs per user
 	rateLimitKey := fmt.Sprintf("run-job:%d", user.ID)
 	if !s.rateLimiter.Allow(rateLimitKey) {
-		s.jsonError(w, "Too many requests. Please wait before running another job.", http.StatusTooManyRequests)
+		s.jsonError(w, "Rate limit exceeded: please wait before running another job", http.StatusTooManyRequests)
 		return
 	}
 	
@@ -194,7 +194,7 @@ func (s *Server) handleRunJob(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	if job.Status == "running" {
-		s.jsonError(w, "Job is already running", 400)
+		s.jsonError(w, "Job is already running", http.StatusBadRequest)
 		return
 	}
 	
@@ -231,7 +231,7 @@ func (s *Server) handleStopJob(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	if job.Status != "running" {
-		s.jsonError(w, "Job is not running", 400)
+		s.jsonError(w, "Job is not running", http.StatusBadRequest)
 		return
 	}
 	
@@ -276,7 +276,7 @@ func (s *Server) handleCancelRun(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	if run.Status != "running" {
-		s.jsonError(w, "Run is not in running state", 400)
+		s.jsonError(w, "Run is not running", http.StatusBadRequest)
 		return
 	}
 	
@@ -287,7 +287,7 @@ func (s *Server) handleCancelRun(w http.ResponseWriter, r *http.Request) {
 	
 	// Mark the run as cancelled
 	if err := q.CancelJobRun(r.Context(), id); err != nil {
-		s.jsonError(w, "Failed to cancel run", 500)
+		s.jsonError(w, "Failed to cancel run", http.StatusInternalServerError)
 		return
 	}
 	
@@ -315,7 +315,7 @@ func (s *Server) handleUpdatePreferences(w http.ResponseWriter, r *http.Request)
 	
 	var req UpdatePreferencesRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		s.jsonError(w, "Invalid JSON", 400)
+		s.jsonError(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 	
@@ -335,7 +335,7 @@ func (s *Server) handleUpdatePreferences(w http.ResponseWriter, r *http.Request)
 		UserID:         user.ID,
 	})
 	if err != nil {
-		s.jsonError(w, "Failed to update preferences", 500)
+		s.jsonError(w, "Failed to update preferences", http.StatusInternalServerError)
 		return
 	}
 	
@@ -445,12 +445,12 @@ func (s *Server) handleDeleteArticles(w http.ResponseWriter, r *http.Request) {
 		IDs []int64 `json:"ids"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		s.jsonError(w, "Invalid request", 400)
+		s.jsonError(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
 	if len(req.IDs) == 0 {
-		s.jsonError(w, "No articles specified", 400)
+		s.jsonError(w, "Invalid request: no articles specified", http.StatusBadRequest)
 		return
 	}
 
