@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"strconv"
 	"strings"
 	"time"
 
@@ -104,10 +103,8 @@ func (s *Server) handleUpdateJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	idStr := r.PathValue("id")
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
-		s.jsonError(w, "Invalid job ID", http.StatusBadRequest)
+	id, ok := parsePathID(w, r, "Invalid job ID")
+	if !ok {
 		return
 	}
 	
@@ -150,10 +147,8 @@ func (s *Server) handleDeleteJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	idStr := r.PathValue("id")
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
-		s.jsonError(w, "Invalid job ID", http.StatusBadRequest)
+	id, ok := parsePathID(w, r, "Invalid job ID")
+	if !ok {
 		return
 	}
 	
@@ -186,10 +181,8 @@ func (s *Server) handleRunJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	idStr := r.PathValue("id")
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
-		s.jsonError(w, "Invalid job ID", http.StatusBadRequest)
+	id, ok := parsePathID(w, r, "Invalid job ID")
+	if !ok {
 		return
 	}
 	
@@ -224,10 +217,8 @@ func (s *Server) handleStopJob(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	idStr := r.PathValue("id")
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
-		s.jsonError(w, "Invalid job ID", http.StatusBadRequest)
+	id, ok := parsePathID(w, r, "Invalid job ID")
+	if !ok {
 		return
 	}
 	
@@ -268,10 +259,8 @@ func (s *Server) handleCancelRun(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	idStr := r.PathValue("id")
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
-		s.jsonError(w, "Invalid run ID", http.StatusBadRequest)
+	id, ok := parsePathID(w, r, "Invalid run ID")
+	if !ok {
 		return
 	}
 	
@@ -360,10 +349,8 @@ func (s *Server) handleArticleContent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	idStr := r.PathValue("id")
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
-		s.jsonError(w, "Invalid article ID", http.StatusBadRequest)
+	id, ok := parsePathID(w, r, "Invalid article ID")
+	if !ok {
 		return
 	}
 	
@@ -390,10 +377,8 @@ func (s *Server) handleRunLog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	idStr := r.PathValue("id")
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
-		s.jsonError(w, "Invalid run ID", http.StatusBadRequest)
+	id, ok := parsePathID(w, r, "Invalid run ID")
+	if !ok {
 		return
 	}
 	

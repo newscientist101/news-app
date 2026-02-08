@@ -205,10 +205,8 @@ func (s *Server) handleJobDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	idStr := r.PathValue("id")
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
-		http.Error(w, "Invalid job ID", http.StatusBadRequest)
+	id, ok := parsePathID(w, r, "Invalid job ID")
+	if !ok {
 		return
 	}
 	
@@ -258,10 +256,8 @@ func (s *Server) handleJobEdit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	idStr := r.PathValue("id")
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
-		http.Error(w, "Invalid job ID", http.StatusBadRequest)
+	id, ok := parsePathID(w, r, "Invalid job ID")
+	if !ok {
 		return
 	}
 	
@@ -406,10 +402,8 @@ func (s *Server) handleArticleDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	idStr := r.PathValue("id")
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
-		http.Error(w, "Invalid article ID", http.StatusBadRequest)
+	id, ok := parsePathID(w, r, "Invalid article ID")
+	if !ok {
 		return
 	}
 	

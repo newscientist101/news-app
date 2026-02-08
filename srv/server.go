@@ -12,6 +12,7 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -417,6 +418,17 @@ func (s *Server) renderTemplate(w http.ResponseWriter, name string, data any) er
 		return fmt.Errorf("execute template %q: %w", name, err)
 	}
 	return nil
+}
+
+// parsePathID extracts and parses the "id" path parameter.
+// Returns the ID and true on success, or writes an error response and returns false.
+func parsePathID(w http.ResponseWriter, r *http.Request, errMsg string) (int64, bool) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		http.Error(w, errMsg, http.StatusBadRequest)
+		return 0, false
+	}
+	return id, true
 }
 
 func (s *Server) jsonError(w http.ResponseWriter, msg string, code int) {
