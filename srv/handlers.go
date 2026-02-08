@@ -13,6 +13,10 @@ import (
 	"srv.exe.dev/db/dbgen"
 )
 
+func redirectToLogin(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "/__exe.dev/login?redirect="+r.URL.Path, http.StatusFound)
+}
+
 // parseSearchTerms splits a search query into terms, keeping quoted phrases together
 func parseSearchTerms(query string) []string {
 	var terms []string
@@ -136,7 +140,7 @@ type PageData struct {
 func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 	user, err := s.getOrCreateUser(r)
 	if err != nil {
-		http.Redirect(w, r, "/__exe.dev/login?redirect=/", http.StatusFound)
+		redirectToLogin(w, r)
 		return
 	}
 	
@@ -166,7 +170,7 @@ func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleJobsList(w http.ResponseWriter, r *http.Request) {
 	user, err := s.getOrCreateUser(r)
 	if err != nil {
-		http.Redirect(w, r, "/__exe.dev/login?redirect=/jobs", http.StatusFound)
+		redirectToLogin(w, r)
 		return
 	}
 	
@@ -186,7 +190,7 @@ func (s *Server) handleJobsList(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleJobNew(w http.ResponseWriter, r *http.Request) {
 	user, err := s.getOrCreateUser(r)
 	if err != nil {
-		http.Redirect(w, r, "/__exe.dev/login?redirect=/jobs/new", http.StatusFound)
+		redirectToLogin(w, r)
 		return
 	}
 	
@@ -200,7 +204,7 @@ func (s *Server) handleJobNew(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleJobDetail(w http.ResponseWriter, r *http.Request) {
 	user, err := s.getOrCreateUser(r)
 	if err != nil {
-		http.Redirect(w, r, "/__exe.dev/login?redirect="+r.URL.Path, http.StatusFound)
+		redirectToLogin(w, r)
 		return
 	}
 	
@@ -254,7 +258,7 @@ func (s *Server) handleJobDetail(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleJobEdit(w http.ResponseWriter, r *http.Request) {
 	user, err := s.getOrCreateUser(r)
 	if err != nil {
-		http.Redirect(w, r, "/__exe.dev/login?redirect="+r.URL.Path, http.StatusFound)
+		redirectToLogin(w, r)
 		return
 	}
 	
@@ -371,7 +375,7 @@ func (qb *articleQueryBuilder) buildSelectQuery() (string, []interface{}) {
 func (s *Server) handleArticlesList(w http.ResponseWriter, r *http.Request) {
 	user, err := s.getOrCreateUser(r)
 	if err != nil {
-		http.Redirect(w, r, "/__exe.dev/login?redirect=/articles", http.StatusFound)
+		redirectToLogin(w, r)
 		return
 	}
 	
@@ -404,7 +408,7 @@ func (s *Server) handleArticlesList(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleArticleDetail(w http.ResponseWriter, r *http.Request) {
 	user, err := s.getOrCreateUser(r)
 	if err != nil {
-		http.Redirect(w, r, "/__exe.dev/login?redirect="+r.URL.Path, http.StatusFound)
+		redirectToLogin(w, r)
 		return
 	}
 	
@@ -432,7 +436,7 @@ func (s *Server) handleArticleDetail(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handlePreferences(w http.ResponseWriter, r *http.Request) {
 	user, err := s.getOrCreateUser(r)
 	if err != nil {
-		http.Redirect(w, r, "/__exe.dev/login?redirect=/preferences", http.StatusFound)
+		redirectToLogin(w, r)
 		return
 	}
 	
@@ -452,7 +456,7 @@ func (s *Server) handlePreferences(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleRuns(w http.ResponseWriter, r *http.Request) {
 	user, err := s.getOrCreateUser(r)
 	if err != nil {
-		http.Redirect(w, r, "/__exe.dev/login?redirect=/runs", http.StatusFound)
+		redirectToLogin(w, r)
 		return
 	}
 	
