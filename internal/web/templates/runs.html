@@ -182,8 +182,12 @@ document.getElementById('logModal').addEventListener('click', function(e) {
 
 {{if .RunningRuns}}
 <script>
-// Auto-refresh for in-progress runs
-setInterval(() => location.reload(), 30000);
+// Auto-refresh for in-progress runs (skip if log modal is open)
+setInterval(() => {
+    if (document.getElementById('logModal').style.display === 'none') {
+        location.reload();
+    }
+}, 30000);
 </script>
 {{end}}
 {{end}}
