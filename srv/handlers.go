@@ -46,52 +46,84 @@ type articlesFilter struct {
 	UseCustomRange bool
 }
 
-// parseArticlesFilters extracts filter parameters from the request
+// parseArticlesFilters extracts filter parameters from the request.
 func parseArticlesFilters(r *http.Request) articlesFilter {
-	f := articlesFilter{}
-	
-	// Pagination
-	f.Page, _ = strconv.Atoi(r.URL.Query().Get("page"))
-	if f.Page < 1 {
-		f.Page = 1
+	q := r.URL.Query()
+
+	f := articlesFilter{
+		Page:        maxInt(parseIntParam(q.Get("page")), 1),
+		Limit:       int64(DefaultPageLimit),
+		SearchQuery: q.Get("q"),
+		JobFilter:   parseInt64Param(q.Get("job")),
+		DateFilter:  q.Get("filter"),
+		DateFrom:    q.Get("from"),
+		DateTo:      q.Get("to"),
 	}
-	f.Limit = int64(DefaultPageLimit)
-	f.Offset = int64((f.Page - 1)) * f.Limit
-	
-	// Search, job, and date filters
-	f.SearchQuery = r.URL.Query().Get("q")
-	f.JobFilter, _ = strconv.ParseInt(r.URL.Query().Get("job"), 10, 64)
-	f.DateFilter = r.URL.Query().Get("filter")
-	f.DateFrom = r.URL.Query().Get("from")
-	f.DateTo = r.URL.Query().Get("to")
-	
-	// Parse date range
-	if f.DateFrom != "" || f.DateTo != "" {
-		f.DateFilter = "custom"
-		f.UseCustomRange = true
-		if f.DateFrom != "" {
-			f.SinceTime, _ = time.Parse("2006-01-02", f.DateFrom)
-		}
-		if f.DateTo != "" {
-			f.UntilTime, _ = time.Parse("2006-01-02", f.DateTo)
-			f.UntilTime = f.UntilTime.Add(24*time.Hour - time.Second) // End of day
-		} else {
-			f.UntilTime = time.Now()
-		}
-	} else {
-		switch f.DateFilter {
-		case "day":
-			f.SinceTime = time.Now().AddDate(0, 0, -1)
-		case "week":
-			f.SinceTime = time.Now().AddDate(0, 0, -7)
-		case "month":
-			f.SinceTime = time.Now().AddDate(0, -1, 0)
-		default:
-			f.DateFilter = ""
-		}
-	}
-	
+	f.Offset = int64(f.Page-1) * f.Limit
+
+	f.parseDateFilters()
 	return f
+}
+
+// parseDateFilters sets SinceTime/UntilTime based on date filter params.
+func (f *articlesFilter) parseDateFilters() {
+	// Custom date range takes priority
+	if f.DateFrom != "" || f.DateTo != "" {
+		f.parseCustomDateRange()
+		return
+	}
+
+	// Predefined filters
+	f.SinceTime = f.predefinedDateOffset()
+	if f.SinceTime.IsZero() {
+		f.DateFilter = "" // Invalid filter
+	}
+}
+
+func (f *articlesFilter) parseCustomDateRange() {
+	f.DateFilter = "custom"
+	f.UseCustomRange = true
+
+	if f.DateFrom != "" {
+		f.SinceTime, _ = time.Parse("2006-01-02", f.DateFrom)
+	}
+	if f.DateTo != "" {
+		f.UntilTime, _ = time.Parse("2006-01-02", f.DateTo)
+		f.UntilTime = f.UntilTime.Add(24*time.Hour - time.Second) // End of day
+	} else {
+		f.UntilTime = time.Now()
+	}
+}
+
+func (f *articlesFilter) predefinedDateOffset() time.Time {
+	now := time.Now()
+	switch f.DateFilter {
+	case "day":
+		return now.AddDate(0, 0, -1)
+	case "week":
+		return now.AddDate(0, 0, -7)
+	case "month":
+		return now.AddDate(0, -1, 0)
+	default:
+		return time.Time{}
+	}
+}
+
+func parseIntParam(s string) int {
+	v, _ := strconv.Atoi(s)
+	return v
+}
+
+func parseInt64Param(s string) int64 {
+	v, _ := strconv.ParseInt(s, 10, 64)
+	return v
+}
+
+func maxInt(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }
 
 type PageData struct {
