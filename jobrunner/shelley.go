@@ -154,12 +154,21 @@ func (c *ShelleyClient) GetConversation(ctx context.Context, jobID int64, convID
 
 // DeleteConversation deletes/cancels a conversation.
 func (c *ShelleyClient) DeleteConversation(ctx context.Context, jobID int64, convID string) error {
+	return c.deleteConversationAs(ctx, jobUserID(jobID), convID)
+}
+
+// DeleteConversationAsCleanup deletes a conversation using the cleanup user ID.
+func (c *ShelleyClient) DeleteConversationAsCleanup(ctx context.Context, convID string) error {
+	return c.deleteConversationAs(ctx, "cleanup", convID)
+}
+
+func (c *ShelleyClient) deleteConversationAs(ctx context.Context, userID, convID string) error {
 	req, err := http.NewRequestWithContext(ctx, "DELETE", c.baseURL+"/api/conversation/"+convID, nil)
 	if err != nil {
 		return err
 	}
 
-	req.Header.Set("X-Exedev-Userid", jobUserID(jobID))
+	req.Header.Set("X-Exedev-Userid", userID)
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {

@@ -25,6 +25,8 @@ func run() error {
 		switch os.Args[1] {
 		case "run-job":
 			return runJobCmd(os.Args[2:])
+		case "cleanup":
+			return cleanupCmd(os.Args[2:])
 		case "help", "-h", "--help":
 			printUsage()
 			return nil
@@ -41,6 +43,7 @@ func printUsage() {
 Commands:
   (default)      Start the web server
   run-job <id>   Execute a news job by ID
+  cleanup        Clean up old Shelley conversations
   help           Show this help message
 
 Server flags:`)
@@ -85,4 +88,24 @@ func runJobCmd(args []string) error {
 	// Run the job
 	runner := jobrunner.NewRunner(dbConn, config)
 	return runner.Run(context.Background(), jobID)
+}
+
+func cleanupCmd(args []string) error {
+	fs := flag.NewFlagSet("cleanup", flag.ExitOnError)
+	maxAge := fs.Int("max-age", 48, "max age in hours for conversations to keep")
+	dryRun := fs.Bool("dry-run", false, "show what would be deleted without deleting")
+	fs.Parse(args)
+
+	cfg := jobrunner.DefaultCleanupConfig()
+	cfg.MaxAgeHours = *maxAge
+	cfg.DryRun = *dryRun
+
+	result, err := jobrunner.Cleanup(context.Background(), cfg)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Cleanup complete: found %d, deleted %d, failed %d\n",
+		result.Found, result.Deleted, result.Failed)
+	return nil
 }
