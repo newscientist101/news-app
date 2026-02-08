@@ -81,8 +81,11 @@ func (c *ShelleyClient) CreateConversationAs(ctx context.Context, userID, prompt
 
 // Conversation represents a Shelley conversation.
 type Conversation struct {
-	ConversationID string    `json:"conversation_id"`
-	Messages       []Message `json:"messages"`
+	Conversation struct {
+		ConversationID string `json:"conversation_id"`
+		Working        *bool  `json:"working"`
+	} `json:"conversation"`
+	Messages []Message `json:"messages"`
 }
 
 // Message represents a message in a conversation.
@@ -105,6 +108,11 @@ type ContentBlock struct {
 
 // IsComplete returns true if the conversation has finished.
 func (c *Conversation) IsComplete() bool {
+	// Use the working field if available
+	if c.Conversation.Working != nil {
+		return !*c.Conversation.Working
+	}
+	// Fallback to checking last agent message
 	for i := len(c.Messages) - 1; i >= 0; i-- {
 		if c.Messages[i].Type == "agent" {
 			return c.Messages[i].EndOfTurn
