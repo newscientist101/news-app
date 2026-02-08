@@ -1,14 +1,16 @@
 package srv
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/exec"
 	"strconv"
-	"log/slog"
+	"strings"
 	"time"
 
 	"srv.exe.dev/db/dbgen"
@@ -456,48 +458,66 @@ func (s *Server) handleDeleteArticles(w http.ResponseWriter, r *http.Request) {
 		s.jsonError(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
-
 	if len(req.IDs) == 0 {
 		s.jsonError(w, "Invalid request: no articles specified", http.StatusBadRequest)
 		return
 	}
 
-	q := dbgen.New(s.DB)
-	deleted := 0
-	var errors []string
-
-	for _, id := range req.IDs {
-		// Get article to find content_path
-		article, err := q.GetArticle(r.Context(), dbgen.GetArticleParams{
-			ID:     id,
-			UserID: user.ID,
-		})
-		if err != nil {
-			errors = append(errors, fmt.Sprintf("Article %d not found", id))
-			continue
-		}
-
-		// Delete the content file
-		if article.ContentPath != "" {
-			if err := os.Remove(article.ContentPath); err != nil && !os.IsNotExist(err) {
-				// Log but don't fail - file might already be gone
-				slog.Warn("Failed to delete article file", "path", article.ContentPath, "error", err)
-			}
-		}
-
-		// Delete from database
-		if err := q.DeleteArticle(r.Context(), dbgen.DeleteArticleParams{
-			ID:     id,
-			UserID: user.ID,
-		}); err != nil {
-			errors = append(errors, fmt.Sprintf("Failed to delete article %d", id))
-			continue
-		}
-		deleted++
+	deleted, err := s.deleteArticlesWithFiles(r.Context(), user.ID, req.IDs)
+	if err != nil {
+		slog.Error("failed to delete articles", "error", err)
+		s.jsonError(w, "Failed to delete articles", http.StatusInternalServerError)
+		return
 	}
 
-	s.jsonOK(w, map[string]interface{}{
-		"deleted": deleted,
-		"errors":  errors,
-	})
+	s.jsonOK(w, map[string]interface{}{"deleted": deleted})
+}
+
+// deleteArticlesWithFiles deletes articles and their content files.
+func (s *Server) deleteArticlesWithFiles(ctx context.Context, userID int64, ids []int64) (int64, error) {
+	if len(ids) == 0 {
+		return 0, nil
+	}
+
+	placeholders, args := buildINClause(userID, ids)
+
+	// Get content paths before deleting
+	query := fmt.Sprintf(
+		"SELECT content_path FROM articles WHERE user_id = ? AND id IN (%s) AND content_path != ''",
+		placeholders,
+	)
+	rows, err := s.DB.QueryContext(ctx, query, args...)
+	if err != nil {
+		return 0, fmt.Errorf("query content paths: %w", err)
+	}
+
+	// Delete files (ignoring errors - files may already be gone)
+	for rows.Next() {
+		var path string
+		if rows.Scan(&path) == nil && path != "" {
+			os.Remove(path)
+		}
+	}
+	rows.Close()
+
+	// Delete from database
+	deleteQuery := fmt.Sprintf("DELETE FROM articles WHERE user_id = ? AND id IN (%s)", placeholders)
+	result, err := s.DB.ExecContext(ctx, deleteQuery, args...)
+	if err != nil {
+		return 0, fmt.Errorf("delete articles: %w", err)
+	}
+	return result.RowsAffected()
+}
+
+// buildINClause builds a placeholder string and args for an IN clause.
+// Returns placeholders like "?,?,?" and args as [userID, id1, id2, id3].
+func buildINClause(userID int64, ids []int64) (string, []interface{}) {
+	placeholders := make([]string, len(ids))
+	args := make([]interface{}, 0, len(ids)+1)
+	args = append(args, userID)
+	for i, id := range ids {
+		placeholders[i] = "?"
+		args = append(args, id)
+	}
+	return strings.Join(placeholders, ","), args
 }
