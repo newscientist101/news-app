@@ -11,8 +11,8 @@ var (
 	jsonArrayRegex = regexp.MustCompile(`(?s)\[.*\]`)
 
 	// Regex to remove markdown code blocks
-	codeBlockStart = regexp.MustCompile(`(?m)^\s*\x60\x60\x60json\s*`)
-	codeBlockEnd   = regexp.MustCompile(`(?m)\s*\x60\x60\x60\s*$`)
+	codeBlockStart = regexp.MustCompile("(?m)^\\s*```(?:json)?\\s*")
+	codeBlockEnd   = regexp.MustCompile("(?m)\\s*```\\s*")
 )
 
 // extractJSONArray finds and extracts a JSON array from text.
