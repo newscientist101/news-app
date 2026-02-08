@@ -43,9 +43,23 @@ type csrfEntry struct {
 	expiresAt time.Time
 }
 
-const csrfTokenLength = 32
-const csrfTokenTTL = 24 * time.Hour
-const csrfHeaderName = "X-CSRF-Token"
+// Application constants
+const (
+	// Pagination
+	DefaultPageLimit = 50
+
+	// Rate limiting
+	RateLimitWindow   = time.Minute
+	RateLimitRequests = 10
+
+	// Static file caching (seconds)
+	StaticCacheMaxAge = 86400 // 1 day
+
+	// CSRF
+	csrfTokenLength = 32
+	csrfTokenTTL    = 24 * time.Hour
+	csrfHeaderName  = "X-CSRF-Token"
+)
 
 func NewCSRFStore() *CSRFStore {
 	return &CSRFStore{
@@ -153,7 +167,7 @@ func New(dbPath, hostname string) (*Server, error) {
 		StaticDir:    filepath.Join(baseDir, "static"),
 		ArticlesDir:  articlesDir,
 		templates:    make(map[string]*template.Template),
-		rateLimiter:  NewRateLimiter(time.Minute, 10), // 10 requests per minute
+		rateLimiter:  NewRateLimiter(RateLimitWindow, RateLimitRequests),
 		csrfTokens:   NewCSRFStore(),
 	}
 	if err := srv.setUpDatabase(dbPath); err != nil {
@@ -215,7 +229,7 @@ func (s *Server) Serve(addr string) error {
 
 	// Static files with caching
 	staticHandler := http.StripPrefix("/static/", http.FileServer(http.Dir(s.StaticDir)))
-	mux.Handle("/static/", cacheControl(staticHandler, 86400)) // 1 day
+	mux.Handle("/static/", cacheControl(staticHandler, StaticCacheMaxAge))
 
 	slog.Info("starting server", "addr", addr)
 	return http.ListenAndServe(addr, mux)

@@ -7,6 +7,10 @@ ARTICLES_DIR="/home/exedev/news-app/articles"
 LOGS_DIR="/home/exedev/news-app/logs/runs"
 SHELLEY_API="http://localhost:9999"
 
+# Configuration
+JOB_START_DELAY_MAX=60      # Max random delay (seconds) to stagger job starts
+POLL_INTERVAL=10            # Seconds between status checks
+
 # Create logs directory
 mkdir -p "$LOGS_DIR"
 
@@ -66,9 +70,9 @@ if [ -z "$JOB_ID" ]; then
     exit 1
 fi
 
-# Add random delay (0-60 seconds) to stagger concurrent job starts
+# Add random delay to stagger concurrent job starts
 # This prevents overwhelming the Shelley API when multiple jobs start simultaneously
-sleep $(( RANDOM % 60 ))
+sleep $(( RANDOM % JOB_START_DELAY_MAX ))
 
 # Get job details
 JOB_DATA=$(db "SELECT user_id, name, prompt, keywords, sources, region, frequency, is_one_time FROM jobs WHERE id = $JOB_ID;")
@@ -219,9 +223,8 @@ db "UPDATE jobs SET current_conversation_id = '$CONV_ID' WHERE id = $JOB_ID;"
 
 # Poll for completion (wait for agent to finish with end_of_turn: true)
 # Timeout can be set via NEWS_JOB_TIMEOUT environment variable (in seconds)
-MAX_WAIT=${NEWS_JOB_TIMEOUT:-900}  # Default 15 minutes
+MAX_WAIT=${NEWS_JOB_TIMEOUT:-1500}  # Default 25 minutes
 WAITED=0
-POLL_INTERVAL=10
 
 while [ $WAITED -lt $MAX_WAIT ]; do
     sleep $POLL_INTERVAL

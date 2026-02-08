@@ -134,7 +134,7 @@ func (s *Server) handleJobDetail(w http.ResponseWriter, r *http.Request) {
 	if page < 1 {
 		page = 1
 	}
-	limit := int64(50)
+	limit := int64(DefaultPageLimit)
 	offset := int64((page - 1)) * limit
 	
 	q := dbgen.New(s.DB)
@@ -208,7 +208,7 @@ func (s *Server) handleArticlesList(w http.ResponseWriter, r *http.Request) {
 	if page < 1 {
 		page = 1
 	}
-	limit := int64(50)
+	limit := int64(DefaultPageLimit)
 	offset := int64((page - 1)) * limit
 	
 	// Search query
@@ -408,7 +408,7 @@ func (s *Server) handleRuns(w http.ResponseWriter, r *http.Request) {
 	}
 	recentRuns, err := q.ListRecentJobRuns(r.Context(), dbgen.ListRecentJobRunsParams{
 		UserID: user.ID,
-		Limit:  50,
+		Limit:  DefaultPageLimit,
 	})
 	if err != nil {
 		slog.Error("failed to list recent job runs", "error", err, "user_id", user.ID)
