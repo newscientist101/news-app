@@ -31,6 +31,69 @@ func parseSearchTerms(query string) []string {
 	return terms
 }
 
+// articlesFilter holds parsed filter parameters for article listing
+type articlesFilter struct {
+	Page           int
+	Limit          int64
+	Offset         int64
+	SearchQuery    string
+	JobFilter      int64
+	DateFilter     string
+	DateFrom       string
+	DateTo         string
+	SinceTime      time.Time
+	UntilTime      time.Time
+	UseCustomRange bool
+}
+
+// parseArticlesFilters extracts filter parameters from the request
+func parseArticlesFilters(r *http.Request) articlesFilter {
+	f := articlesFilter{}
+	
+	// Pagination
+	f.Page, _ = strconv.Atoi(r.URL.Query().Get("page"))
+	if f.Page < 1 {
+		f.Page = 1
+	}
+	f.Limit = int64(DefaultPageLimit)
+	f.Offset = int64((f.Page - 1)) * f.Limit
+	
+	// Search, job, and date filters
+	f.SearchQuery = r.URL.Query().Get("q")
+	f.JobFilter, _ = strconv.ParseInt(r.URL.Query().Get("job"), 10, 64)
+	f.DateFilter = r.URL.Query().Get("filter")
+	f.DateFrom = r.URL.Query().Get("from")
+	f.DateTo = r.URL.Query().Get("to")
+	
+	// Parse date range
+	if f.DateFrom != "" || f.DateTo != "" {
+		f.DateFilter = "custom"
+		f.UseCustomRange = true
+		if f.DateFrom != "" {
+			f.SinceTime, _ = time.Parse("2006-01-02", f.DateFrom)
+		}
+		if f.DateTo != "" {
+			f.UntilTime, _ = time.Parse("2006-01-02", f.DateTo)
+			f.UntilTime = f.UntilTime.Add(24*time.Hour - time.Second) // End of day
+		} else {
+			f.UntilTime = time.Now()
+		}
+	} else {
+		switch f.DateFilter {
+		case "day":
+			f.SinceTime = time.Now().AddDate(0, 0, -1)
+		case "week":
+			f.SinceTime = time.Now().AddDate(0, 0, -7)
+		case "month":
+			f.SinceTime = time.Now().AddDate(0, -1, 0)
+		default:
+			f.DateFilter = ""
+		}
+	}
+	
+	return f
+}
+
 type PageData struct {
 	User         *dbgen.User
 	Preferences  *dbgen.Preference
@@ -197,6 +260,112 @@ func (s *Server) handleJobEdit(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// queryArticles executes the appropriate query based on filters
+func (s *Server) queryArticles(r *http.Request, userID int64, f articlesFilter) ([]dbgen.Article, int64) {
+	q := dbgen.New(s.DB)
+	var articles []dbgen.Article
+	var count int64
+	
+	// Priority: search > job > date filters
+	switch {
+	case f.SearchQuery != "":
+		articles, count = s.searchArticles(r, userID, f)
+	case f.JobFilter > 0:
+		articles, _ = q.ListArticlesByJobPaginated(r.Context(), dbgen.ListArticlesByJobPaginatedParams{
+			JobID:  f.JobFilter,
+			UserID: userID,
+			Limit:  f.Limit,
+			Offset: f.Offset,
+		})
+		count, _ = q.CountArticlesByJob(r.Context(), dbgen.CountArticlesByJobParams{
+			JobID:  f.JobFilter,
+			UserID: userID,
+		})
+	case f.UseCustomRange:
+		articles, _ = q.ListArticlesByUserDateRange(r.Context(), dbgen.ListArticlesByUserDateRangeParams{
+			UserID:        userID,
+			RetrievedAt:   f.SinceTime,
+			RetrievedAt_2: f.UntilTime,
+			Limit:         f.Limit,
+			Offset:        f.Offset,
+		})
+		count, _ = q.CountArticlesByUserDateRange(r.Context(), dbgen.CountArticlesByUserDateRangeParams{
+			UserID:        userID,
+			RetrievedAt:   f.SinceTime,
+			RetrievedAt_2: f.UntilTime,
+		})
+	case f.DateFilter != "":
+		articles, _ = q.ListArticlesByUserSince(r.Context(), dbgen.ListArticlesByUserSinceParams{
+			UserID:      userID,
+			RetrievedAt: f.SinceTime,
+			Limit:       f.Limit,
+			Offset:      f.Offset,
+		})
+		count, _ = q.CountArticlesByUserSince(r.Context(), dbgen.CountArticlesByUserSinceParams{
+			UserID:      userID,
+			RetrievedAt: f.SinceTime,
+		})
+	default:
+		articles, _ = q.ListArticlesByUser(r.Context(), dbgen.ListArticlesByUserParams{
+			UserID: userID,
+			Limit:  f.Limit,
+			Offset: f.Offset,
+		})
+		count, _ = q.CountArticlesByUser(r.Context(), userID)
+	}
+	
+	return articles, count
+}
+
+// searchArticles performs a full-text search across article titles and summaries
+func (s *Server) searchArticles(r *http.Request, userID int64, f articlesFilter) ([]dbgen.Article, int64) {
+	var articles []dbgen.Article
+	var count int64
+	
+	terms := parseSearchTerms(f.SearchQuery)
+	if len(terms) == 0 {
+		return articles, count
+	}
+	
+	// Build dynamic query with AND conditions for each term
+	var conditions []string
+	var args []interface{}
+	args = append(args, userID)
+	
+	for _, term := range terms {
+		pattern := "%" + term + "%"
+		conditions = append(conditions, "(title LIKE ? OR summary LIKE ?)")
+		args = append(args, pattern, pattern)
+	}
+	
+	whereClause := strings.Join(conditions, " AND ")
+	
+	// Count query
+	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM articles WHERE user_id = ? AND %s", whereClause)
+	s.DB.QueryRowContext(r.Context(), countQuery, args...).Scan(&count)
+	
+	// Articles query with pagination
+	articlesQuery := fmt.Sprintf(
+		"SELECT id, job_id, user_id, title, url, summary, content_path, retrieved_at "+
+			"FROM articles WHERE user_id = ? AND %s ORDER BY retrieved_at DESC LIMIT ? OFFSET ?",
+		whereClause,
+	)
+	args = append(args, f.Limit, f.Offset)
+	rows, err := s.DB.QueryContext(r.Context(), articlesQuery, args...)
+	if err != nil {
+		return articles, count
+	}
+	defer rows.Close()
+	
+	for rows.Next() {
+		var a dbgen.Article
+		rows.Scan(&a.ID, &a.JobID, &a.UserID, &a.Title, &a.Url, &a.Summary, &a.ContentPath, &a.RetrievedAt)
+		articles = append(articles, a)
+	}
+	
+	return articles, count
+}
+
 func (s *Server) handleArticlesList(w http.ResponseWriter, r *http.Request) {
 	user, err := s.getOrCreateUser(r)
 	if err != nil {
@@ -204,142 +373,26 @@ func (s *Server) handleArticlesList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
-	if page < 1 {
-		page = 1
-	}
-	limit := int64(DefaultPageLimit)
-	offset := int64((page - 1)) * limit
-	
-	// Search query
-	searchQuery := r.URL.Query().Get("q")
-	
-	// Job filter
-	jobFilter, _ := strconv.ParseInt(r.URL.Query().Get("job"), 10, 64)
-	
-	// Date filter
-	dateFilter := r.URL.Query().Get("filter")
-	dateFrom := r.URL.Query().Get("from")
-	dateTo := r.URL.Query().Get("to")
-	
-	var sinceTime, untilTime time.Time
-	var useCustomRange bool
-	
-	// Custom date range takes precedence
-	if dateFrom != "" || dateTo != "" {
-		dateFilter = "custom"
-		useCustomRange = true
-		if dateFrom != "" {
-			sinceTime, _ = time.Parse("2006-01-02", dateFrom)
-		} else {
-			sinceTime = time.Time{} // Beginning of time
-		}
-		if dateTo != "" {
-			untilTime, _ = time.Parse("2006-01-02", dateTo)
-			untilTime = untilTime.Add(24*time.Hour - time.Second) // End of day
-		} else {
-			untilTime = time.Now()
-		}
-	} else {
-		switch dateFilter {
-		case "day":
-			sinceTime = time.Now().AddDate(0, 0, -1)
-		case "week":
-			sinceTime = time.Now().AddDate(0, 0, -7)
-		case "month":
-			sinceTime = time.Now().AddDate(0, -1, 0)
-		default:
-			dateFilter = ""
-		}
-	}
-	
-	q := dbgen.New(s.DB)
-	var articles []dbgen.Article
-	var count int64
-	
-	// Priority: search > job > date filters
-	if searchQuery != "" {
-		// Split search terms, keeping quoted phrases together
-		terms := parseSearchTerms(searchQuery)
-		if len(terms) > 0 {
-			// Build dynamic query with AND conditions for each term
-			var conditions []string
-			var args []interface{}
-			args = append(args, user.ID)
-			
-			for _, term := range terms {
-				pattern := "%" + term + "%"
-				conditions = append(conditions, "(title LIKE ? OR summary LIKE ?)")
-				args = append(args, pattern, pattern)
-			}
-			
-			whereClause := strings.Join(conditions, " AND ")
-			
-			// Count query
-			countQuery := fmt.Sprintf("SELECT COUNT(*) FROM articles WHERE user_id = ? AND %s", whereClause)
-			s.DB.QueryRowContext(r.Context(), countQuery, args...).Scan(&count)
-			
-			// Articles query with pagination
-			articlesQuery := fmt.Sprintf("SELECT id, job_id, user_id, title, url, summary, content_path, retrieved_at FROM articles WHERE user_id = ? AND %s ORDER BY retrieved_at DESC LIMIT ? OFFSET ?", whereClause)
-			args = append(args, limit, offset)
-			rows, err := s.DB.QueryContext(r.Context(), articlesQuery, args...)
-			if err == nil {
-				defer rows.Close()
-				for rows.Next() {
-					var a dbgen.Article
-					rows.Scan(&a.ID, &a.JobID, &a.UserID, &a.Title, &a.Url, &a.Summary, &a.ContentPath, &a.RetrievedAt)
-					articles = append(articles, a)
-				}
-			}
-		}
-	} else if jobFilter > 0 {
-		articles, _ = q.ListArticlesByJobPaginated(r.Context(), dbgen.ListArticlesByJobPaginatedParams{
-			JobID:  jobFilter,
-			UserID: user.ID,
-			Limit:  limit,
-			Offset: offset,
-		})
-		count, _ = q.CountArticlesByJob(r.Context(), dbgen.CountArticlesByJobParams{
-			JobID:  jobFilter,
-			UserID: user.ID,
-		})
-	} else if useCustomRange {
-		articles, _ = q.ListArticlesByUserDateRange(r.Context(), dbgen.ListArticlesByUserDateRangeParams{
-			UserID:        user.ID,
-			RetrievedAt:   sinceTime,
-			RetrievedAt_2: untilTime,
-			Limit:         limit,
-			Offset:        offset,
-		})
-		count, _ = q.CountArticlesByUserDateRange(r.Context(), dbgen.CountArticlesByUserDateRangeParams{
-			UserID:        user.ID,
-			RetrievedAt:   sinceTime,
-			RetrievedAt_2: untilTime,
-		})
-	} else if dateFilter != "" {
-		articles, _ = q.ListArticlesByUserSince(r.Context(), dbgen.ListArticlesByUserSinceParams{
-			UserID:      user.ID,
-			RetrievedAt: sinceTime,
-			Limit:       limit,
-			Offset:      offset,
-		})
-		count, _ = q.CountArticlesByUserSince(r.Context(), dbgen.CountArticlesByUserSinceParams{
-			UserID:      user.ID,
-			RetrievedAt: sinceTime,
-		})
-	} else {
-		articles, _ = q.ListArticlesByUser(r.Context(), dbgen.ListArticlesByUserParams{
-			UserID: user.ID,
-			Limit:  limit,
-			Offset: offset,
-		})
-		count, _ = q.CountArticlesByUser(r.Context(), user.ID)
-	}
+	f := parseArticlesFilters(r)
+	articles, count := s.queryArticles(r, user.ID, f)
 	
 	// Get jobs list for the filter dropdown
+	q := dbgen.New(s.DB)
 	jobs, _ := q.ListJobsByUser(r.Context(), user.ID)
 	
-	data := PageData{User: user, Jobs: jobs, Articles: articles, TotalCount: count, Page: page, DateFilter: dateFilter, DateFrom: dateFrom, DateTo: dateTo, SearchQuery: searchQuery, JobFilter: jobFilter, CSRFToken: s.getCSRFToken(r)}
+	data := PageData{
+		User:        user,
+		Jobs:        jobs,
+		Articles:    articles,
+		TotalCount:  count,
+		Page:        f.Page,
+		DateFilter:  f.DateFilter,
+		DateFrom:    f.DateFrom,
+		DateTo:      f.DateTo,
+		SearchQuery: f.SearchQuery,
+		JobFilter:   f.JobFilter,
+		CSRFToken:   s.getCSRFToken(r),
+	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := s.renderTemplate(w, "articles.html", data); err != nil {
 		http.Error(w, err.Error(), 500)
