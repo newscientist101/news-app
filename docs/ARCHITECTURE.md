@@ -172,21 +172,47 @@ The agent spawns a subagent to search the web. The prompt includes an instructio
 
 ### Service Restart Recovery
 
-The app includes several mechanisms to handle service restarts gracefully:
+The app automatically resumes interrupted jobs after service restarts:
 
-1. **Stuck Job Detection**: On startup, the web server scans for job runs stuck in "running" state and marks them as failed with the error message "job interrupted by service restart".
+**Automatic Job Resumption:**
+1. **Detection**: On startup, scans for job runs stuck in "running" state
+2. **Mark Failed**: Marks the interrupted run as failed with message "interrupted by service restart (auto-restarting)"
+3. **Reset Job**: Resets job status to 'idle' to allow new run
+4. **Restart**: Immediately starts a new run for the same job
+5. **Resume**: New run detects existing Shelley conversation and resumes polling it
+6. **Complete**: Job continues from where it left off until conversation completes
 
-2. **Separate Process Execution**: When jobs are triggered manually (not via systemd), they run as independent processes rather than goroutines within the web server. This prevents them from being killed when the web server restarts.
+**Deduplication**: If multiple runs of the same job were stuck, only one restart is triggered to avoid race conditions.
 
-3. **Signal Handling**: Job runners listen for SIGTERM and SIGINT signals and attempt graceful shutdown:
-   - Cancel ongoing operations via context
-   - Wait up to 10 seconds for cleanup
-   - Update database status before exit
+**Example Recovery:**
+```
+21:04:50 - Service restarted
+21:04:51 - Found run 164 stuck (job 26, conversation cKVMHUC)
+21:04:51 - Marked run 164 as failed
+21:04:51 - Reset job 26 status to 'idle'
+21:04:51 - Started new run 165 for job 26
+21:04:52 - Run 165 detected existing conversation cKVMHUC
+21:04:52 - Resuming polling of conversation cKVMHUC
+21:12:30 - Conversation completes, articles processed
+```
 
-4. **Context Propagation**: The job runner respects context cancellation throughout its execution:
-   - During conversation polling
-   - During content fetching
-   - During database operations
+### Separate Process Execution
+
+When jobs are triggered manually (not via systemd), they run as independent processes rather than goroutines within the web server. This ensures jobs continue running even if the web server process restarts.
+
+### Signal Handling
+
+Job runners listen for SIGTERM and SIGINT signals and attempt graceful shutdown:
+- Cancel ongoing operations via context
+- Wait up to 10 seconds for cleanup
+- Update database status before exit
+
+### Context Propagation
+
+The job runner respects context cancellation throughout its execution:
+- During conversation polling
+- During content fetching
+- During database operations
 
 ### Manual Recovery
 
