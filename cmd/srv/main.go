@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 
 	"srv.exe.dev/db"
 	"srv.exe.dev/jobrunner"
@@ -27,6 +28,8 @@ func run() error {
 			return runJobCmd(os.Args[2:])
 		case "cleanup":
 			return cleanupCmd(os.Args[2:])
+		case "troubleshoot":
+			return troubleshootCmd(os.Args[2:])
 		case "help", "-h", "--help":
 			printUsage()
 			return nil
@@ -44,6 +47,7 @@ Commands:
   (default)      Start the web server
   run-job <id>   Execute a news job by ID
   cleanup        Clean up old Shelley conversations
+  troubleshoot   Diagnose failed job runs
   help           Show this help message
 
 Server flags:`)
@@ -107,5 +111,30 @@ func cleanupCmd(args []string) error {
 
 	fmt.Printf("Cleanup complete: found %d, deleted %d, failed %d\n",
 		result.Found, result.Deleted, result.Failed)
+	return nil
+}
+
+func troubleshootCmd(args []string) error {
+	fs := flag.NewFlagSet("troubleshoot", flag.ExitOnError)
+	lookback := fs.Int("lookback", 24, "hours to look back for problems")
+	dryRun := fs.Bool("dry-run", false, "show problems without creating conversation")
+	fs.Parse(args)
+
+	cfg := jobrunner.DefaultTroubleshootConfig()
+	cfg.Lookback = time.Duration(*lookback) * time.Hour
+	cfg.DryRun = *dryRun
+
+	result, err := jobrunner.Troubleshoot(context.Background(), cfg)
+	if err != nil {
+		return err
+	}
+
+	if result.ProblemsFound == 0 {
+		fmt.Println("No problems found.")
+	} else if result.ConversationID != "" {
+		fmt.Printf("Found %d problems. Conversation: %s\n", result.ProblemsFound, result.ConversationID)
+	} else {
+		fmt.Printf("Found %d problems (dry run).\n", result.ProblemsFound)
+	}
 	return nil
 }

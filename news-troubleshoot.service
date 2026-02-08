@@ -11,7 +11,7 @@ After=network.target
 
 [Service]
 Type=oneshot
-ExecStart=/home/exedev/news-app/troubleshoot-runs.sh
+ExecStart=/home/exedev/news-app/news-app troubleshoot
 User=exedev
 WorkingDirectory=/home/exedev/news-app
 

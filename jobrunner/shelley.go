@@ -33,6 +33,11 @@ func jobUserID(jobID int64) string {
 
 // CreateConversation creates a new conversation with the given prompt.
 func (c *ShelleyClient) CreateConversation(ctx context.Context, jobID int64, prompt string) (string, error) {
+	return c.CreateConversationAs(ctx, jobUserID(jobID), prompt)
+}
+
+// CreateConversationAs creates a new conversation with a custom user ID.
+func (c *ShelleyClient) CreateConversationAs(ctx context.Context, userID, prompt string) (string, error) {
 	reqBody := map[string]string{
 		"message": prompt,
 		"model":   "claude-sonnet-4.5",
@@ -45,7 +50,7 @@ func (c *ShelleyClient) CreateConversation(ctx context.Context, jobID int64, pro
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Exedev-Userid", jobUserID(jobID))
+	req.Header.Set("X-Exedev-Userid", userID)
 	req.Header.Set("X-Shelley-Request", "1")
 
 	resp, err := c.httpClient.Do(req)

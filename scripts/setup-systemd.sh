@@ -171,11 +171,9 @@ After=network.target
 
 [Service]
 Type=oneshot
-ExecStart=$APP_DIR/cleanup-conversations.sh
+ExecStart=$APP_DIR/news-app cleanup
 User=$APP_USER
 WorkingDirectory=$APP_DIR
-Environment=SHELLEY_DB=$APP_HOME/.config/shelley/shelley.db
-Environment=SHELLEY_API=$SHELLEY_API
 
 [Install]
 WantedBy=multi-user.target
@@ -203,12 +201,9 @@ After=network.target
 
 [Service]
 Type=oneshot
-ExecStart=$APP_DIR/troubleshoot-runs.sh
+ExecStart=$APP_DIR/news-app troubleshoot
 User=$APP_USER
 WorkingDirectory=$APP_DIR
-Environment=DB_PATH=$APP_DIR/db.sqlite3
-Environment=SHELLEY_API=$SHELLEY_API
-Environment=LOG_FILE=$APP_DIR/logs/troubleshoot.log
 
 [Install]
 WantedBy=multi-user.target
