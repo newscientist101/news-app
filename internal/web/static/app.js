@@ -83,8 +83,8 @@ async function runJob(id) {
     try {
         const res = await fetch(`/api/jobs/${id}/run`, { method: 'POST', headers: getCsrfHeaders() });
         if (res.ok) {
-            showSuccess('Job Started', 'The job is now running. Page will reload shortly.');
-            setTimeout(() => location.reload(), 1500);
+            showSuccess('Job Started', 'The job is now running.');
+            setTimeout(() => location.reload(), 3000);
         } else {
             const err = await res.json();
             showError('Failed to Start Job', err.error);
