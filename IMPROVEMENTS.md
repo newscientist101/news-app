@@ -163,12 +163,14 @@ Discord webhook calls can fail silently.
 
 **Resolution:** Added send_discord_notification() function with 3 retries and exponential backoff. Handles rate limiting (429) with longer delays.
 
-### 16. Conversation Cleanup Could Be Better
+### 16. Conversation Cleanup Could Be Better ❌ SKIPPED
 **Issue: Resource Management**
 
 Conversations are archived but subagent detection relies on API call that could fail.
 
 **Recommendation:** More robust cleanup, perhaps as a separate cron job.
+
+**Status:** Skipped - Shelley API likely handles this internally.
 
 ### 17. No Health Check Endpoint
 **Issue: Operations**
