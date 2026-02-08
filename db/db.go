@@ -13,7 +13,7 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-//go:generate go tool github.com/sqlc-dev/sqlc/cmd/sqlc generate
+//go:generate sqlc generate
 
 //go:embed migrations/*.sql
 var migrationFS embed.FS
