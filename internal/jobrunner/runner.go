@@ -317,6 +317,23 @@ func (r *Runner) pollForCompletion(ctx context.Context, jobID int64, convID stri
 	}
 }
 
+// ProcessArticles processes and saves articles for a job (public wrapper).
+func (r *Runner) ProcessArticles(ctx context.Context, jobID int64, articles []ArticleInfo) (saved, dups int, err error) {
+	job, err := r.queries.GetJobByID(ctx, jobID)
+	if err != nil {
+		return 0, 0, fmt.Errorf("get job: %w", err)
+	}
+
+	// Create articles directory for this user
+	articlesDir := filepath.Join(r.config.ArticlesDir, fmt.Sprintf("user_%d", job.UserID))
+	if err := os.MkdirAll(articlesDir, 0755); err != nil {
+		return 0, 0, fmt.Errorf("create articles dir: %w", err)
+	}
+
+	saved, dups = r.processArticles(ctx, job, articles, articlesDir)
+	return saved, dups, nil
+}
+
 func (r *Runner) processArticles(ctx context.Context, job dbgen.Job, articles []ArticleInfo, articlesDir string) (saved, dups int) {
 	timestamp := time.Now().Format("20060102_150405")
 
