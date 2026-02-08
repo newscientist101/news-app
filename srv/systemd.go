@@ -14,7 +14,8 @@ import (
 // Config with defaults, overridable via environment variables
 var (
 	systemdDir    = getEnvDefault("NEWS_APP_SYSTEMD_DIR", "/etc/systemd/system")
-	jobRunnerPath = getEnvDefault("NEWS_APP_JOB_RUNNER", "/home/exedev/news-app/run-job.sh")
+	jobRunnerPath = getEnvDefault("NEWS_APP_JOB_RUNNER", "/home/exedev/news-app/news-app")
+	jobRunnerArgs = getEnvDefault("NEWS_APP_JOB_RUNNER_ARGS", "run-job") // subcommand
 	workingDir    = getEnvDefault("NEWS_APP_WORKING_DIR", "/home/exedev/news-app")
 	runAsUser     = getEnvDefault("NEWS_APP_RUN_USER", "exedev")
 )
@@ -36,14 +37,14 @@ After=network.target
 
 [Service]
 Type=oneshot
-ExecStart=%s %d
+ExecStart=%s %s %d
 User=%s
 WorkingDirectory=%s
 RuntimeMaxSec=1800
 
 [Install]
 WantedBy=multi-user.target
-`, job.ID, job.Name, jobRunnerPath, job.ID, runAsUser, workingDir)
+`, job.ID, job.Name, jobRunnerPath, jobRunnerArgs, job.ID, runAsUser, workingDir)
 	
 	servicePath := filepath.Join(systemdDir, serviceName+".service")
 	if err := writeFileWithSudo(servicePath, serviceContent); err != nil {

@@ -21,6 +21,17 @@ func (q *Queries) CancelJobRun(ctx context.Context, id int64) error {
 	return err
 }
 
+const cancelOrphanedRuns = `-- name: CancelOrphanedRuns :exec
+UPDATE job_runs 
+SET status = 'cancelled', error_message = 'Cancelled: new run started', completed_at = CURRENT_TIMESTAMP 
+WHERE job_id = ? AND status = 'running'
+`
+
+func (q *Queries) CancelOrphanedRuns(ctx context.Context, jobID int64) error {
+	_, err := q.db.ExecContext(ctx, cancelOrphanedRuns, jobID)
+	return err
+}
+
 const completeJobRun = `-- name: CompleteJobRun :exec
 UPDATE job_runs
 SET status = ?, error_message = ?, articles_saved = ?, duplicates_skipped = ?, completed_at = CURRENT_TIMESTAMP
@@ -287,6 +298,31 @@ func (q *Queries) ListRunningJobRuns(ctx context.Context, userID int64) ([]ListR
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateJobRunComplete = `-- name: UpdateJobRunComplete :exec
+UPDATE job_runs
+SET status = ?, error_message = ?, articles_saved = ?, duplicates_skipped = ?, completed_at = CURRENT_TIMESTAMP
+WHERE id = ?
+`
+
+type UpdateJobRunCompleteParams struct {
+	Status            string  `json:"status"`
+	ErrorMessage      *string `json:"error_message"`
+	ArticlesSaved     *int64  `json:"articles_saved"`
+	DuplicatesSkipped *int64  `json:"duplicates_skipped"`
+	ID                int64   `json:"id"`
+}
+
+func (q *Queries) UpdateJobRunComplete(ctx context.Context, arg UpdateJobRunCompleteParams) error {
+	_, err := q.db.ExecContext(ctx, updateJobRunComplete,
+		arg.Status,
+		arg.ErrorMessage,
+		arg.ArticlesSaved,
+		arg.DuplicatesSkipped,
+		arg.ID,
+	)
+	return err
 }
 
 const updateJobRunLogPath = `-- name: UpdateJobRunLogPath :exec

@@ -45,3 +45,6 @@ SELECT * FROM articles WHERE job_id = ? AND user_id = ? ORDER BY retrieved_at DE
 
 -- name: CountArticlesByJob :one
 SELECT COUNT(*) FROM articles WHERE job_id = ? AND user_id = ?;
+
+-- name: ArticleExistsByURL :one
+SELECT COUNT(*) FROM articles WHERE user_id = ? AND url = ?;

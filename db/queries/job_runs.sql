@@ -44,3 +44,13 @@ WHERE jr.id = ? AND j.user_id = ?;
 UPDATE job_runs
 SET status = 'cancelled', error_message = 'Cancelled by user', completed_at = CURRENT_TIMESTAMP
 WHERE id = ?;
+
+-- name: CancelOrphanedRuns :exec
+UPDATE job_runs 
+SET status = 'cancelled', error_message = 'Cancelled: new run started', completed_at = CURRENT_TIMESTAMP 
+WHERE job_id = ? AND status = 'running';
+
+-- name: UpdateJobRunComplete :exec
+UPDATE job_runs
+SET status = ?, error_message = ?, articles_saved = ?, duplicates_skipped = ?, completed_at = CURRENT_TIMESTAMP
+WHERE id = ?;

@@ -10,6 +10,22 @@ import (
 	"time"
 )
 
+const articleExistsByURL = `-- name: ArticleExistsByURL :one
+SELECT COUNT(*) FROM articles WHERE user_id = ? AND url = ?
+`
+
+type ArticleExistsByURLParams struct {
+	UserID int64  `json:"user_id"`
+	Url    string `json:"url"`
+}
+
+func (q *Queries) ArticleExistsByURL(ctx context.Context, arg ArticleExistsByURLParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, articleExistsByURL, arg.UserID, arg.Url)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const countArticlesByJob = `-- name: CountArticlesByJob :one
 SELECT COUNT(*) FROM articles WHERE job_id = ? AND user_id = ?
 `

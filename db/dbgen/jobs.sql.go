@@ -62,6 +62,15 @@ func (q *Queries) CreateJob(ctx context.Context, arg CreateJobParams) (Job, erro
 	return i, err
 }
 
+const deactivateJob = `-- name: DeactivateJob :exec
+UPDATE jobs SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+`
+
+func (q *Queries) DeactivateJob(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deactivateJob, id)
+	return err
+}
+
 const deleteJob = `-- name: DeleteJob :exec
 DELETE FROM jobs WHERE id = ? AND user_id = ?
 `
@@ -255,6 +264,20 @@ func (q *Queries) UpdateJob(ctx context.Context, arg UpdateJobParams) error {
 		arg.ID,
 		arg.UserID,
 	)
+	return err
+}
+
+const updateJobConversation = `-- name: UpdateJobConversation :exec
+UPDATE jobs SET current_conversation_id = ? WHERE id = ?
+`
+
+type UpdateJobConversationParams struct {
+	CurrentConversationID *string `json:"current_conversation_id"`
+	ID                    int64   `json:"id"`
+}
+
+func (q *Queries) UpdateJobConversation(ctx context.Context, arg UpdateJobConversationParams) error {
+	_, err := q.db.ExecContext(ctx, updateJobConversation, arg.CurrentConversationID, arg.ID)
 	return err
 }
 

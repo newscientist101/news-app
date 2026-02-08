@@ -27,3 +27,9 @@ DELETE FROM jobs WHERE id = ? AND user_id = ?;
 
 -- name: GetJobByID :one
 SELECT * FROM jobs WHERE id = ?;
+
+-- name: UpdateJobConversation :exec
+UPDATE jobs SET current_conversation_id = ? WHERE id = ?;
+
+-- name: DeactivateJob :exec
+UPDATE jobs SET is_active = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?;
