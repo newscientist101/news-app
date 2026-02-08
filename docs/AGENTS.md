@@ -85,3 +85,58 @@ journalctl -u news-job-{id} -f
 # Run tests
 go test ./...
 ```
+
+### Browser Testing and Page Viewing
+
+**Authentication Requirements:**
+
+The news-app requires exe.dev authentication headers on ALL requests. Without these headers, requests are redirected to `/__exe.dev/login`.
+
+**Required Headers:**
+- `X-ExeDev-UserID` - User identifier (e.g., "test-user-123")
+- `X-ExeDev-Email` - User email (e.g., "test@example.com")
+
+**When Testing with curl:**
+```bash
+curl -H "X-ExeDev-UserID: test-user-123" \
+     -H "X-ExeDev-Email: test@example.com" \
+     http://localhost:8000/
+```
+
+**When Testing with Browser Automation:**
+
+Direct navigation to `http://localhost:8000/` will result in a 404 redirect because the browser cannot inject headers automatically.
+
+**Solutions:**
+
+1. **Fetch and inject (simplest):**
+   ```javascript
+   const response = await fetch('http://localhost:8000/', {
+     headers: {
+       'X-ExeDev-UserID': 'test-user-123',
+       'X-ExeDev-Email': 'test@example.com'
+     }
+   });
+   const html = await response.text();
+   document.open();
+   document.write(html);
+   document.close();
+   ```
+   
+   Note: This approach loads the initial HTML but may have issues with relative links and static resources, which won't automatically include the headers.
+
+2. **Access via exe.dev proxy (production):**
+   Navigate to `https://your-vm.exe.xyz:8000/`
+   
+   The exe.dev HTTPS proxy automatically injects the authentication headers based on your logged-in user.
+
+3. **Use a local proxy:**
+   Set up a reverse proxy (like nginx) that adds the headers to all requests before forwarding to the app.
+
+**Why This is Needed:**
+
+The app's `getOrCreateUser()` function (in `internal/web/server.go`) checks for `X-ExeDev-UserID` header on every request. If missing, it returns an authentication error, causing handlers to call `redirectToLogin()`, which redirects to `/__exe.dev/login?redirect={path}`.
+
+**In Production:**
+
+When accessed through the exe.dev proxy (`https://your-vm.exe.xyz:8000/`), all authentication is handled automatically by the proxy infrastructure. No additional configuration is needed.
