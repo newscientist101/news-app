@@ -260,110 +260,93 @@ func (s *Server) handleJobEdit(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// queryArticles executes the appropriate query based on filters
+// queryArticles builds and executes a dynamic query based on filters.
+// This replaces multiple sqlc queries with a single flexible implementation.
 func (s *Server) queryArticles(r *http.Request, userID int64, f articlesFilter) ([]dbgen.Article, int64) {
-	q := dbgen.New(s.DB)
-	var articles []dbgen.Article
-	var count int64
-	
-	// Priority: search > job > date filters
-	switch {
-	case f.SearchQuery != "":
-		articles, count = s.searchArticles(r, userID, f)
-	case f.JobFilter > 0:
-		articles, _ = q.ListArticlesByJobPaginated(r.Context(), dbgen.ListArticlesByJobPaginatedParams{
-			JobID:  f.JobFilter,
-			UserID: userID,
-			Limit:  f.Limit,
-			Offset: f.Offset,
-		})
-		count, _ = q.CountArticlesByJob(r.Context(), dbgen.CountArticlesByJobParams{
-			JobID:  f.JobFilter,
-			UserID: userID,
-		})
-	case f.UseCustomRange:
-		articles, _ = q.ListArticlesByUserDateRange(r.Context(), dbgen.ListArticlesByUserDateRangeParams{
-			UserID:        userID,
-			RetrievedAt:   f.SinceTime,
-			RetrievedAt_2: f.UntilTime,
-			Limit:         f.Limit,
-			Offset:        f.Offset,
-		})
-		count, _ = q.CountArticlesByUserDateRange(r.Context(), dbgen.CountArticlesByUserDateRangeParams{
-			UserID:        userID,
-			RetrievedAt:   f.SinceTime,
-			RetrievedAt_2: f.UntilTime,
-		})
-	case f.DateFilter != "":
-		articles, _ = q.ListArticlesByUserSince(r.Context(), dbgen.ListArticlesByUserSinceParams{
-			UserID:      userID,
-			RetrievedAt: f.SinceTime,
-			Limit:       f.Limit,
-			Offset:      f.Offset,
-		})
-		count, _ = q.CountArticlesByUserSince(r.Context(), dbgen.CountArticlesByUserSinceParams{
-			UserID:      userID,
-			RetrievedAt: f.SinceTime,
-		})
-	default:
-		articles, _ = q.ListArticlesByUser(r.Context(), dbgen.ListArticlesByUserParams{
-			UserID: userID,
-			Limit:  f.Limit,
-			Offset: f.Offset,
-		})
-		count, _ = q.CountArticlesByUser(r.Context(), userID)
-	}
-	
-	return articles, count
-}
+	qb := newArticleQueryBuilder(userID, f)
 
-// searchArticles performs a full-text search across article titles and summaries
-func (s *Server) searchArticles(r *http.Request, userID int64, f articlesFilter) ([]dbgen.Article, int64) {
-	var articles []dbgen.Article
+	// Get count
 	var count int64
-	
-	terms := parseSearchTerms(f.SearchQuery)
-	if len(terms) == 0 {
-		return articles, count
-	}
-	
-	// Build dynamic query with AND conditions for each term
-	var conditions []string
-	var args []interface{}
-	args = append(args, userID)
-	
-	for _, term := range terms {
-		pattern := "%" + term + "%"
-		conditions = append(conditions, "(title LIKE ? OR summary LIKE ?)")
-		args = append(args, pattern, pattern)
-	}
-	
-	whereClause := strings.Join(conditions, " AND ")
-	
-	// Count query
-	countQuery := fmt.Sprintf("SELECT COUNT(*) FROM articles WHERE user_id = ? AND %s", whereClause)
-	s.DB.QueryRowContext(r.Context(), countQuery, args...).Scan(&count)
-	
-	// Articles query with pagination
-	articlesQuery := fmt.Sprintf(
-		"SELECT id, job_id, user_id, title, url, summary, content_path, retrieved_at "+
-			"FROM articles WHERE user_id = ? AND %s ORDER BY retrieved_at DESC LIMIT ? OFFSET ?",
-		whereClause,
-	)
-	args = append(args, f.Limit, f.Offset)
-	rows, err := s.DB.QueryContext(r.Context(), articlesQuery, args...)
+	countQuery, countArgs := qb.buildCountQuery()
+	s.DB.QueryRowContext(r.Context(), countQuery, countArgs...).Scan(&count)
+
+	// Get articles
+	articlesQuery, articlesArgs := qb.buildSelectQuery()
+	rows, err := s.DB.QueryContext(r.Context(), articlesQuery, articlesArgs...)
 	if err != nil {
-		return articles, count
+		return nil, count
 	}
 	defer rows.Close()
-	
+
+	var articles []dbgen.Article
 	for rows.Next() {
 		var a dbgen.Article
 		rows.Scan(&a.ID, &a.JobID, &a.UserID, &a.Title, &a.Url, &a.Summary, &a.ContentPath, &a.RetrievedAt)
 		articles = append(articles, a)
 	}
-	
 	return articles, count
+}
+
+// articleQueryBuilder constructs SQL queries for article listing with filters.
+type articleQueryBuilder struct {
+	conditions []string
+	args       []interface{}
+	limit      int64
+	offset     int64
+}
+
+func newArticleQueryBuilder(userID int64, f articlesFilter) *articleQueryBuilder {
+	qb := &articleQueryBuilder{
+		conditions: []string{"user_id = ?"},
+		args:       []interface{}{userID},
+		limit:      f.Limit,
+		offset:     f.Offset,
+	}
+
+	// Add filters (priority: search > job > date)
+	switch {
+	case f.SearchQuery != "":
+		qb.addSearchFilter(f.SearchQuery)
+	case f.JobFilter > 0:
+		qb.conditions = append(qb.conditions, "job_id = ?")
+		qb.args = append(qb.args, f.JobFilter)
+	case f.UseCustomRange:
+		qb.conditions = append(qb.conditions, "retrieved_at >= ?", "retrieved_at <= ?")
+		qb.args = append(qb.args, f.SinceTime, f.UntilTime)
+	case f.DateFilter != "":
+		qb.conditions = append(qb.conditions, "retrieved_at >= ?")
+		qb.args = append(qb.args, f.SinceTime)
+	}
+
+	return qb
+}
+
+func (qb *articleQueryBuilder) addSearchFilter(query string) {
+	terms := parseSearchTerms(query)
+	for _, term := range terms {
+		pattern := "%" + term + "%"
+		qb.conditions = append(qb.conditions, "(title LIKE ? OR summary LIKE ?)")
+		qb.args = append(qb.args, pattern, pattern)
+	}
+}
+
+func (qb *articleQueryBuilder) whereClause() string {
+	return strings.Join(qb.conditions, " AND ")
+}
+
+func (qb *articleQueryBuilder) buildCountQuery() (string, []interface{}) {
+	query := fmt.Sprintf("SELECT COUNT(*) FROM articles WHERE %s", qb.whereClause())
+	return query, qb.args
+}
+
+func (qb *articleQueryBuilder) buildSelectQuery() (string, []interface{}) {
+	query := fmt.Sprintf(
+		"SELECT id, job_id, user_id, title, url, summary, content_path, retrieved_at "+
+			"FROM articles WHERE %s ORDER BY retrieved_at DESC LIMIT ? OFFSET ?",
+		qb.whereClause(),
+	)
+	args := append(qb.args, qb.limit, qb.offset)
+	return query, args
 }
 
 func (s *Server) handleArticlesList(w http.ResponseWriter, r *http.Request) {
