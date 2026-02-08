@@ -142,6 +142,8 @@ sudo systemctl disable news-job-123.timer
 
 Cleans up old Shelley conversations to prevent database bloat.
 
+> ⚠️ **Important:** This service is critical for preventing storage issues. Each job run creates conversations in the Shelley database (`~/.config/shelley/shelley.db`) that are NOT automatically cleaned up. Without this service, the database can easily fill up your VM's storage. **Always verify this timer is running after deployment.**
+
 ```ini
 [Unit]
 Description=Cleanup old news-app conversations
@@ -161,6 +163,12 @@ WantedBy=multi-user.target
 - Finds Shelley conversations older than 48 hours
 - Only deletes API-created conversations (not interactive sessions)
 - Deletes child conversations (subagents) first
+
+**Verify it's running:**
+```bash
+systemctl status news-cleanup.timer
+# Should show "active (waiting)"
+```
 
 **Manual run:**
 ```bash

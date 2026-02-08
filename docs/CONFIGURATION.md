@@ -163,3 +163,5 @@ The job runner uses the following Shelley settings:
 - User ID format: `news-job-{job_id}`
 - Cleanup user ID: `cleanup`
 - Troubleshoot user ID: `news-app-troubleshoot`
+
+> ⚠️ **Storage Warning:** Conversations created by the job runner are stored in `~/.config/shelley/shelley.db` and are NOT automatically cleaned up by Shelley. The `news-cleanup.timer` service must be running to prevent the database from filling up your VM's storage. Verify with: `systemctl status news-cleanup.timer`

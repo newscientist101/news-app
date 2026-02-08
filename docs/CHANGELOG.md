@@ -8,6 +8,8 @@ All notable changes to this project are documented in this file.
 - Auto-troubleshooting service that diagnoses failed job runs daily
 - Troubleshooting reports saved to `logs/troubleshoot/`
 - Token usage warning in README
+- Storage warning about Shelley database cleanup requirement
+- Troubleshooting section for storage issues
 
 ### Changed
 - Reorganized directory structure following Go conventions:

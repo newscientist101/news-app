@@ -279,6 +279,80 @@ sqlite3 db.sqlite3 "PRAGMA integrity_check;"
 
 ---
 
+## Storage Issues
+
+### Shelley database filling up storage
+
+**Symptoms:** VM storage is full or nearly full, `~/.config/shelley/shelley.db` is very large
+
+> ⚠️ **This is a known issue.** Each job run creates conversations in the Shelley database that are NOT automatically cleaned up by Shelley itself. Without the cleanup service, this can easily fill up your VM's storage.
+
+**Diagnostics:**
+```bash
+# Check Shelley database size
+ls -lh ~/.config/shelley/shelley.db
+
+# Check disk usage
+df -h /home
+
+# Count old conversations
+sqlite3 ~/.config/shelley/shelley.db "SELECT COUNT(*) FROM conversations WHERE cwd IS NULL AND created_at < datetime('now', '-48 hours');"
+```
+
+**Solutions:**
+
+1. **Verify cleanup timer is running**
+   ```bash
+   systemctl status news-cleanup.timer
+   
+   # If not running, enable it:
+   sudo systemctl enable news-cleanup.timer
+   sudo systemctl start news-cleanup.timer
+   ```
+
+2. **Run cleanup manually**
+   ```bash
+   # See what would be cleaned up
+   ./news-app cleanup --dry-run
+   
+   # Actually clean up (default: conversations older than 48 hours)
+   ./news-app cleanup
+   
+   # Clean up more aggressively (older than 24 hours)
+   ./news-app cleanup --max-age 24
+   ```
+
+3. **Check cleanup is working**
+   ```bash
+   # View cleanup service logs
+   journalctl -u news-cleanup.service --since "7 days ago"
+   
+   # Manually trigger the cleanup service
+   sudo systemctl start news-cleanup.service
+   ```
+
+4. **Emergency cleanup if storage is critical**
+   ```bash
+   # Stop services first
+   sudo systemctl stop news-app
+   
+   # Aggressive cleanup (older than 12 hours)
+   ./news-app cleanup --max-age 12
+   
+   # Vacuum the database to reclaim space
+   sqlite3 ~/.config/shelley/shelley.db "VACUUM;"
+   
+   # Restart services
+   sudo systemctl start news-app
+   ```
+
+**Prevention:**
+- Ensure `news-cleanup.timer` is enabled and running
+- Consider reducing job frequency if storage is limited
+- Monitor disk usage periodically: `df -h`
+
+---
+
 ## Shelley API Issues
 
 ### Cannot connect to Shelley API
