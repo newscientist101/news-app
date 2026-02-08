@@ -3,3 +3,5 @@ db.sqlite3*
 /news-app
 TROUBLESHOOTING_SUMMARY.md
 logs/
+data.db
+news.db
