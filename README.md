@@ -2,6 +2,8 @@
 
 A multi-user web app that retrieves news articles using the Shelley AI agent. Users can create scheduled jobs to search for news on specific topics, and the app fetches full article content for offline reading.
 
+**Designed for [exe.dev](https://exe.dev) VMs** - uses exe.dev authentication headers and the Shelley AI agent.
+
 ## Quick Start
 
 ```bash
@@ -15,16 +17,17 @@ sudo ./deploy/setup-systemd.sh
 ./news-app -listen :8000
 ```
 
-Access at: http://localhost:8000/
+Access at your exe.dev VM URL (e.g., `https://your-vm.exe.xyz:8000/`)
 
 ## Features
 
+- **exe.dev Integration**: Authentication via exe.dev proxy headers, Shelley AI for news retrieval
 - **Job Scheduling**: Create one-time or recurring jobs (hourly, 6 hours, daily, weekly)
 - **Job Editing**: Modify job settings, prompts, and schedules at any time
 - **Search Filters**: Filter by keywords, sources, geographic region
 - **Full Content Fetching**: Automatically fetches and stores complete article text
 - **User Preferences**: Custom system prompts, Discord webhook notifications
-- **Multi-user**: Each user has their own jobs and articles
+- **Multi-user**: Each user has their own jobs and articles (identified by exe.dev user ID)
 
 ## Documentation
 
@@ -85,10 +88,15 @@ See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for details.
 
 ## Requirements
 
+- [exe.dev](https://exe.dev) VM (provides authentication and HTTPS proxy)
 - Go 1.21+
 - SQLite3
-- Shelley API instance (default: localhost:9999)
+- Shelley AI agent (runs on exe.dev VMs at localhost:9999)
 - Linux with systemd (for scheduled jobs)
+
+## Authentication
+
+This app relies on exe.dev's authentication proxy. The proxy adds `X-Exedev-Userid` and `X-Exedev-Email` headers to incoming requests, which the app uses to identify users. No additional auth configuration is needed.
 
 ## License
 
