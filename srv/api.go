@@ -137,7 +137,7 @@ func (s *Server) handleUpdateJob(w http.ResponseWriter, r *http.Request) {
 	updateSystemdTimer(job)
 	
 	slog.Info("job updated", "job_id", id, "user_id", user.ID)
-	s.jsonOK(w, map[string]string{"status": "ok"})
+	s.jsonStatus(w, "ok")
 }
 
 func (s *Server) handleDeleteJob(w http.ResponseWriter, r *http.Request) {
@@ -164,7 +164,7 @@ func (s *Server) handleDeleteJob(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	slog.Info("job deleted", "job_id", id, "user_id", user.ID)
-	s.jsonOK(w, map[string]string{"status": "ok"})
+	s.jsonStatus(w, "ok")
 }
 
 func (s *Server) handleRunJob(w http.ResponseWriter, r *http.Request) {
@@ -207,7 +207,7 @@ func (s *Server) handleRunJob(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	slog.Info("job started", "job_id", job.ID, "user_id", user.ID, "name", job.Name)
-	s.jsonOK(w, map[string]string{"status": "started"})
+	s.jsonStatus(w, "started")
 }
 
 func (s *Server) handleStopJob(w http.ResponseWriter, r *http.Request) {
@@ -249,7 +249,7 @@ func (s *Server) handleStopJob(w http.ResponseWriter, r *http.Request) {
 	})
 	
 	slog.Info("job stopped", "job_id", job.ID, "user_id", user.ID)
-	s.jsonOK(w, map[string]string{"status": "stopped"})
+	s.jsonStatus(w, "stopped")
 }
 
 func (s *Server) handleCancelRun(w http.ResponseWriter, r *http.Request) {
@@ -303,7 +303,7 @@ func (s *Server) handleCancelRun(w http.ResponseWriter, r *http.Request) {
 	}
 	
 	slog.Info("run cancelled", "run_id", id, "job_id", run.JobID, "user_id", user.ID)
-	s.jsonOK(w, map[string]string{"status": "cancelled"})
+	s.jsonStatus(w, "cancelled")
 }
 
 func (s *Server) handleUpdatePreferences(w http.ResponseWriter, r *http.Request) {
@@ -339,7 +339,7 @@ func (s *Server) handleUpdatePreferences(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	
-	s.jsonOK(w, map[string]string{"status": "ok"})
+	s.jsonStatus(w, "ok")
 }
 
 func (s *Server) handleArticleContent(w http.ResponseWriter, r *http.Request) {

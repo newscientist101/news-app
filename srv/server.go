@@ -445,3 +445,7 @@ func (s *Server) jsonOK(w http.ResponseWriter, data any) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(data)
 }
+
+func (s *Server) jsonStatus(w http.ResponseWriter, status string) {
+	s.jsonOK(w, map[string]string{"status": status})
+}
