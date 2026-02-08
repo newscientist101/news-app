@@ -312,7 +312,7 @@ func (r *Runner) pollForCompletion(ctx context.Context, jobID int64, convID stri
 				return conv, nil
 			}
 
-			r.logger.Info("waiting for agent", "waited", waited)
+			r.logger.Debug("waiting for agent", "waited", waited)
 		}
 	}
 }
