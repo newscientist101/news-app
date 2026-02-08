@@ -181,12 +181,14 @@ No `/health` endpoint for monitoring.
 
 **Resolution:** Added GET /health endpoint that checks database connectivity and returns JSON status. Returns 200 when healthy, 503 when degraded.
 
-### 18. Missing Form Validation Feedback
+### 18. Missing Form Validation Feedback ✅ COMPLETED
 **Issue: UX**
 
 Job creation form does client-side validation but error messages are basic `alert()` boxes.
 
 **Recommendation:** Show inline validation errors.
+
+**Resolution:** Replaced all alert() calls with a toast notification system. Toasts slide in from the right, auto-dismiss, and show success/error/info variants with appropriate styling.
 
 ### 19. Static File Caching Headers
 **Issue: Performance**
