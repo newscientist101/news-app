@@ -478,12 +478,16 @@ h2 { margin: 1.5rem 0 1rem; }
     }
 }
 
-.date-range-form .date-label {
+.date-input {
     display: inline-flex;
     align-items: center;
-    gap: 0.25rem;
+}
+
+.date-input::before {
+    content: attr(data-label);
     font-size: 0.85rem;
     color: #666;
+    margin-right: 0.25rem;
 }
 
 .date-range-form input[type="date"] {
@@ -837,7 +841,7 @@ h2 { margin: 1.5rem 0 1rem; }
         flex-wrap: wrap;
     }
 
-    .date-range-form .date-label {
+    .date-input {
         flex: 1;
         min-width: 140px;
     }
