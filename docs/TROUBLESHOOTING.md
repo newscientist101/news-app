@@ -285,7 +285,7 @@ sqlite3 db.sqlite3 "PRAGMA integrity_check;"
 
 **Symptoms:** VM storage is full or nearly full, `~/.config/shelley/shelley.db` is very large
 
-> ⚠️ **This is a known bug.** When the Shelley service processes LLM requests, the raw request/response data is stored in the Shelley database and is **not automatically cleaned up**. The `news-app cleanup` command only removes the parsed conversation records, **not the underlying raw LLM data**. This means storage will continue to grow over time even with cleanup running.
+> ⚠️ **This is a known bug.** When the Shelley service processes LLM requests, the raw request/response data is stored in the `llm_requests` table in the Shelley database and is **not automatically cleaned up**. The `news-app cleanup` command only removes the parsed conversation records from the `conversations` and `messages` tables, **not the underlying raw LLM data in `llm_requests`**. This means storage will continue to grow over time even with cleanup running.
 
 **Diagnostics:**
 ```bash
@@ -298,6 +298,9 @@ df -h /home
 # Check database table sizes
 sqlite3 ~/.config/shelley/shelley.db ".tables"
 sqlite3 ~/.config/shelley/shelley.db "SELECT name, SUM(pgsize) as size FROM dbstat GROUP BY name ORDER BY size DESC;"
+
+# Check llm_requests table size specifically
+sqlite3 ~/.config/shelley/shelley.db "SELECT COUNT(*) as rows, printf('%.2f MB', CAST(SUM(LENGTH(COALESCE(request_body, '')) + LENGTH(COALESCE(response_body, ''))) AS REAL) / 1024.0 / 1024.0) as data_size FROM llm_requests;"
 ```
 
 **Mitigation (partial):**
