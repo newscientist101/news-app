@@ -10,16 +10,21 @@
 <body>
     <nav class="navbar">
         <div class="nav-brand">News Agent</div>
-        <div class="nav-links">
-            <a href="/">Dashboard</a>
-            <a href="/jobs">Jobs</a>
-            <a href="/runs">Runs</a>
-            <a href="/articles">Articles</a>
-            <a href="/preferences">Preferences</a>
+        <button class="nav-toggle" aria-label="Toggle navigation" onclick="document.querySelector('.navbar').classList.toggle('nav-open')">
+            <span class="hamburger"></span>
+        </button>
+        <div class="nav-menu">
+            <div class="nav-links">
+                <a href="/">Dashboard</a>
+                <a href="/jobs">Jobs</a>
+                <a href="/runs">Runs</a>
+                <a href="/articles">Articles</a>
+                <a href="/preferences">Preferences</a>
+            </div>
+            {{if .User}}
+            <div class="nav-user">{{.User.Email}}</div>
+            {{end}}
         </div>
-        {{if .User}}
-        <div class="nav-user">{{.User.Email}}</div>
-        {{end}}
     </nav>
     <main class="container">
         {{template "content" .}}
