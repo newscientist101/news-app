@@ -84,5 +84,9 @@ echo
 echo "Next check scheduled for:"
 systemctl list-timers news-db-monitor.timer --no-pager | tail -1
 echo
-echo "View logs with: journalctl -u news-db-monitor.service -f"
-echo "Test now with:  sudo systemctl start news-db-monitor.service"
+echo "Useful commands:"
+echo "  journalctl -u news-db-monitor.service -f     # View logs"
+echo "  sudo systemctl start news-db-monitor.service # Trigger check now"
+echo
+echo "Send a test email to verify email configuration:"
+echo "  sudo -u $SUDO_USER ALERT_EMAIL=$EMAIL $(dirname "$0")/check-db-size.sh --test"

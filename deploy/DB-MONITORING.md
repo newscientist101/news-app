@@ -14,6 +14,8 @@ The monitoring service:
 
 ### Set Your Email Address
 
+> **Note:** The exe.dev email service can only send emails to the VM owner's email address (the address associated with your exe.dev account). You cannot send to arbitrary email addresses.
+
 The service needs your email address to send alerts. Edit the systemd service file:
 
 ```bash
@@ -50,12 +52,30 @@ To your desired value (in gigabytes).
 Test the monitoring script manually:
 
 ```bash
-# Run with default settings
+# Check current size (no email)
 ./deploy/check-db-size.sh
+
+# Send test email with current database size
+ALERT_EMAIL=your-email@example.com ./deploy/check-db-size.sh --test
 
 # Test with custom threshold (will trigger alert if over 0.5 GB)
 DB_THRESHOLD_GB=0.5 ALERT_EMAIL=your-email@example.com ./deploy/check-db-size.sh
 ```
+
+### Test Email
+
+The `--test` flag sends an informational email with:
+- Current database size
+- Threshold setting
+- Percentage of threshold used
+- Table breakdown (llm_requests stats)
+- Current status (over/under threshold)
+
+This is useful for:
+- Verifying email configuration works
+- Checking current database size
+- Testing the monitoring setup
+- Doesn't trigger the "alert sent" state, so won't affect normal alerts
 
 ## Systemd Service
 
@@ -74,6 +94,9 @@ systemctl list-timers news-db-monitor.timer
 
 # Trigger a manual check
 sudo systemctl start news-db-monitor.service
+
+# Send a test email (as the exedev user)
+ALERT_EMAIL=your-email@example.com /home/exedev/news-app/deploy/check-db-size.sh --test
 ```
 
 ## Alert Email
