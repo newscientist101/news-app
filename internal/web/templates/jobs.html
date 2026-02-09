@@ -5,7 +5,7 @@
 </div>
 
 {{if .Jobs}}
-<table class="table">
+<table class="table table-responsive">
     <thead>
         <tr>
             <th>Name</th>
@@ -19,12 +19,12 @@
     <tbody>
         {{range .Jobs}}
         <tr>
-            <td><a href="/jobs/{{.ID}}">{{.Name}}</a></td>
-            <td class="truncate">{{.Prompt}}</td>
-            <td>{{if eq .IsOneTime 1}}One-time{{else}}{{.Frequency}}{{end}}</td>
-            <td><span class="status status-{{.Status}}">{{.Status}}</span></td>
-            <td>{{if eq .IsActive 1}}✓{{else}}✗{{end}}</td>
-            <td>
+            <td data-label="Name"><a href="/jobs/{{.ID}}">{{.Name}}</a></td>
+            <td data-label="Prompt" class="truncate">{{.Prompt}}</td>
+            <td data-label="Frequency">{{if eq .IsOneTime 1}}One-time{{else}}{{.Frequency}}{{end}}</td>
+            <td data-label="Status"><span class="status status-{{.Status}}">{{.Status}}</span></td>
+            <td data-label="Active">{{if eq .IsActive 1}}✓{{else}}✗{{end}}</td>
+            <td class="actions-cell">
                 {{if eq .Status "running"}}
                 <button class="btn btn-sm btn-danger" onclick="stopJob({{.ID}})" title="Stop job">⏹</button>
                 {{else}}

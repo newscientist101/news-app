@@ -5,7 +5,7 @@
 
 <h2>In Progress</h2>
 {{if .RunningRuns}}
-<table class="table">
+<table class="table table-responsive">
     <thead>
         <tr>
             <th>Run #</th>
@@ -19,11 +19,11 @@
     <tbody>
         {{range .RunningRuns}}
         <tr>
-            <td>{{.ID}}</td>
-            <td><a href="/jobs/{{.JobID}}">{{.JobName}}</a></td>
-            <td>{{.StartedAt.Format "Jan 02 15:04:05"}}</td>
-            <td class="run-duration" data-started="{{.StartedAt.Unix}}">calculating...</td>
-            <td class="run-results">
+            <td data-label="Run #">{{.ID}}</td>
+            <td data-label="Job"><a href="/jobs/{{.JobID}}">{{.JobName}}</a></td>
+            <td data-label="Started">{{.StartedAt.Format "Jan 02 15:04:05"}}</td>
+            <td data-label="Duration" class="run-duration" data-started="{{.StartedAt.Unix}}">calculating...</td>
+            <td data-label="Progress" class="run-results">
                 {{if or .ArticlesSaved .DuplicatesSkipped}}
                     <strong>{{if .ArticlesSaved}}{{.ArticlesSaved}}{{else}}0{{end}}</strong> saved
                     {{if .DuplicatesSkipped}}<span class="text-muted"> / {{.DuplicatesSkipped}} dupes</span>{{end}}
@@ -31,11 +31,11 @@
                     <span class="text-muted">waiting...</span>
                 {{end}}
             </td>
-            <td>
+            <td class="actions-cell">
                 {{if .LogPath}}
-                <a href="#" onclick="viewLog({{.ID}}); return false;" style="margin-right: 1em;">View log</a>
+                <a href="#" onclick="viewLog({{.ID}}); return false;" class="btn btn-sm">Log</a>
                 {{end}}
-                <button class="btn btn-sm btn-danger" onclick="cancelRun({{.ID}})" title="Cancel run">⏹ Cancel</button>
+                <button class="btn btn-sm btn-danger" onclick="cancelRun({{.ID}})" title="Cancel run">⏹</button>
             </td>
         </tr>
         {{end}}
@@ -47,7 +47,7 @@
 
 <h2>Recent Runs</h2>
 {{if .RecentRuns}}
-<table class="table">
+<table class="table table-responsive">
     <thead>
         <tr>
             <th>Run #</th>
@@ -55,19 +55,17 @@
             <th>Status</th>
             <th>Results</th>
             <th>Started</th>
-            <th>Completed</th>
             <th>Duration</th>
-            <th>Error</th>
             <th>Log</th>
         </tr>
     </thead>
     <tbody>
         {{range .RecentRuns}}
         <tr>
-            <td>{{.ID}}</td>
-            <td><a href="/jobs/{{.JobID}}">{{.JobName}}</a></td>
-            <td><span class="status status-{{.Status}}">{{.Status}}</span></td>
-            <td class="run-results">
+            <td data-label="Run #">{{.ID}}</td>
+            <td data-label="Job"><a href="/jobs/{{.JobID}}">{{.JobName}}</a></td>
+            <td data-label="Status"><span class="status status-{{.Status}}">{{.Status}}</span></td>
+            <td data-label="Results" class="run-results">
                 {{if or .ArticlesSaved .DuplicatesSkipped}}
                     <span title="New articles saved">
                         <strong>{{if .ArticlesSaved}}{{.ArticlesSaved}}{{else}}0{{end}}</strong> saved
@@ -79,9 +77,8 @@
                     <span class="text-muted">-</span>
                 {{end}}
             </td>
-            <td>{{.StartedAt.Format "Jan 02 15:04:05"}}</td>
-            <td>{{if .CompletedAt}}{{.CompletedAt.Format "Jan 02 15:04:05"}}{{else}}-{{end}}</td>
-            <td>
+            <td data-label="Started">{{.StartedAt.Format "Jan 02 15:04"}}</td>
+            <td data-label="Duration">
                 {{if .CompletedAt}}
                     {{$duration := .CompletedAt.Sub .StartedAt}}
                     {{$minutes := $duration.Minutes | printf "%.0f"}}
@@ -91,12 +88,14 @@
                     <span class="run-duration" data-started="{{.StartedAt.Unix}}">calculating...</span>
                 {{end}}
             </td>
-            <td class="truncate">{{if .ErrorMessage}}{{.ErrorMessage}}{{else}}-{{end}}</td>
-            <td>
+            <td class="actions-cell">
                 {{if .LogPath}}
-                <a href="#" onclick="viewLog({{.ID}}); return false;">View log</a>
+                <a href="#" onclick="viewLog({{.ID}}); return false;" class="btn btn-sm">Log</a>
                 {{else}}
                 <span class="text-muted">-</span>
+                {{end}}
+                {{if .ErrorMessage}}
+                <span class="error-indicator" title="{{.ErrorMessage}}">⚠</span>
                 {{end}}
             </td>
         </tr>
