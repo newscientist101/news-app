@@ -12,8 +12,8 @@
     <span class="filter-separator">|</span>
     <form method="get" action="/articles" class="date-range-form">
         {{if .SearchQuery}}<input type="hidden" name="q" value="{{.SearchQuery}}">{{end}}
-        <input type="date" name="from" value="{{.DateFrom}}" placeholder="From">
-        <input type="date" name="to" value="{{.DateTo}}" placeholder="To">
+        <label class="date-label">From <input type="date" name="from" value="{{.DateFrom}}"></label>
+        <label class="date-label">To <input type="date" name="to" value="{{.DateTo}}"></label>
         <button type="submit" class="btn btn-sm">Apply</button>
     </form>
     <span class="filter-separator">|</span>
