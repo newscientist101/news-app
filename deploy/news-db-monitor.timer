@@ -1,0 +1,12 @@
+[Unit]
+Description=Shelley Database Size Monitor Timer
+Requires=news-db-monitor.service
+
+[Timer]
+# Check every 6 hours
+OnBootSec=5min
+OnUnitActiveSec=6h
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,19 @@
+[Unit]
+Description=Shelley Database Size Monitor
+After=network.target
+
+[Service]
+Type=oneshot
+User=exedev
+WorkingDirectory=/home/exedev/news-app
+Environment="SHELLEY_DB=/home/exedev/.config/shelley/shelley.db"
+Environment="DB_THRESHOLD_GB=5"
+Environment="STATE_FILE=/home/exedev/.config/news-app/db-monitor-state"
+# Set your email address here:
+Environment="ALERT_EMAIL=your-email@example.com"
+ExecStart=/home/exedev/news-app/deploy/check-db-size.sh
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

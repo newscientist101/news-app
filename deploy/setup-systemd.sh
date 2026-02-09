@@ -90,6 +90,8 @@ if $UNINSTALL; then
     systemctl disable news-cleanup.timer 2>/dev/null || true
     systemctl stop news-troubleshoot.timer 2>/dev/null || true
     systemctl disable news-troubleshoot.timer 2>/dev/null || true
+    systemctl stop news-db-monitor.timer 2>/dev/null || true
+    systemctl disable news-db-monitor.timer 2>/dev/null || true
     
     # Stop and remove job services
     for svc in /etc/systemd/system/news-job-*.service; do
@@ -109,6 +111,8 @@ if $UNINSTALL; then
     rm -f /etc/systemd/system/news-cleanup.timer
     rm -f /etc/systemd/system/news-troubleshoot.service
     rm -f /etc/systemd/system/news-troubleshoot.timer
+    rm -f /etc/systemd/system/news-db-monitor.service
+    rm -f /etc/systemd/system/news-db-monitor.timer
     rm -f /etc/systemd/system/news-job-*
     rm -f /etc/sudoers.d/news-app
     
@@ -222,6 +226,45 @@ RandomizedDelaySec=300
 WantedBy=timers.target
 EOF
 
+# Install database monitor service and timer
+info "Installing news-db-monitor.service..."
+cat > /etc/systemd/system/news-db-monitor.service << EOF
+[Unit]
+Description=Shelley Database Size Monitor
+After=network.target
+
+[Service]
+Type=oneshot
+User=$APP_USER
+WorkingDirectory=$APP_DIR
+Environment="SHELLEY_DB=$APP_HOME/.config/shelley/shelley.db"
+Environment="DB_THRESHOLD_GB=5"
+Environment="STATE_FILE=$APP_HOME/.config/news-app/db-monitor-state"
+# Set your email address here:
+Environment="ALERT_EMAIL="
+ExecStart=$APP_DIR/deploy/check-db-size.sh
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+cat > /etc/systemd/system/news-db-monitor.timer << EOF
+[Unit]
+Description=Shelley Database Size Monitor Timer
+Requires=news-db-monitor.service
+
+[Timer]
+# Check every 6 hours
+OnBootSec=5min
+OnUnitActiveSec=6h
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+
 # Configure sudoers for job management
 info "Configuring sudoers..."
 cat > /etc/sudoers.d/news-app << EOF
@@ -250,11 +293,13 @@ info "Enabling services..."
 systemctl enable news-app.service
 systemctl enable news-cleanup.timer
 systemctl enable news-troubleshoot.timer
+systemctl enable news-db-monitor.timer
 
 info "Starting services..."
 systemctl start news-app.service
 systemctl start news-cleanup.timer
 systemctl start news-troubleshoot.timer
+systemctl start news-db-monitor.timer
 
 echo
 info "Setup complete!"
@@ -263,6 +308,7 @@ echo "Services status:"
 systemctl is-active news-app.service && echo "  news-app.service: running" || echo "  news-app.service: not running"
 systemctl is-active news-cleanup.timer && echo "  news-cleanup.timer: active" || echo "  news-cleanup.timer: inactive"
 systemctl is-active news-troubleshoot.timer && echo "  news-troubleshoot.timer: active" || echo "  news-troubleshoot.timer: inactive"
+systemctl is-active news-db-monitor.timer && echo "  news-db-monitor.timer: active" || echo "  news-db-monitor.timer: inactive"
 
 echo
 echo "Useful commands:"

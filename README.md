@@ -42,6 +42,7 @@ Access at your exe.dev VM URL (e.g., `https://your-vm.exe.xyz:8000/`)
 
 - [ARCHITECTURE.md](docs/ARCHITECTURE.md) - System design and data flow
 - [DEPLOYMENT.md](docs/DEPLOYMENT.md) - Systemd services and deployment guide
+- [DB-MONITORING.md](deploy/DB-MONITORING.md) - Database size monitoring and email alerts
 - [BUILD.md](docs/BUILD.md) - Build instructions and development setup
 - [API.md](docs/API.md) - REST API reference
 - [CONFIGURATION.md](docs/CONFIGURATION.md) - Environment variables and settings
@@ -96,6 +97,7 @@ The app uses several systemd services for scheduling and maintenance:
 | `news-job-{id}.timer` | Job scheduling |
 | `news-cleanup.timer` | Clean old Shelley conversations (every 48h) |
 | `news-troubleshoot.timer` | Auto-diagnose failed runs (daily) |
+| `news-db-monitor.timer` | Monitor Shelley DB size, email alerts (every 6h) |
 
 See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for details.
 
