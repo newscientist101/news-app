@@ -548,6 +548,14 @@ func (r *Runner) cancelOrphanedRuns(ctx context.Context, jobID int64) error {
 }
 
 func (r *Runner) finalizeRun(ctx context.Context, job dbgen.Job, runID int64, result JobResult, prefs dbgen.Preference) {
+	// Check if run is still in running state (prevent double finalization)
+	var currentStatus string
+	err := r.db.QueryRowContext(ctx, "SELECT status FROM job_runs WHERE id = ?", runID).Scan(&currentStatus)
+	if err != nil || currentStatus != "running" {
+		r.logger.Info("run already finalized, skipping", "run_id", runID, "current_status", currentStatus)
+		return
+	}
+
 	now := time.Now()
 
 	// Determine run status
