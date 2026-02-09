@@ -675,11 +675,6 @@ h2 { margin: 1.5rem 0 1rem; }
     color: #28a745;
 }
 
-.error-indicator {
-    color: #dc3545;
-    cursor: help;
-    margin-left: 0.5rem;
-}
 
 /* Toast notifications */
 .toast-container {
